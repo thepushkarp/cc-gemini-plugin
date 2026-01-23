@@ -21,18 +21,18 @@ Invoke Gemini CLI for long-context code exploration and analysis. Gemini's 1M to
 
 | Argument | Description | Example |
 |----------|-------------|---------|
-| `--model <name>` | Model override | `--model gemini-2.5-flash` |
+| `--model <name>` | Model override | `--model gemini-3-flash-preview` |
 | `--files <pattern>` | Pipe files matching glob | `--files "src/**/*.ts"` |
 | `--dirs <paths>` | Include directories for context | `--dirs src,lib,tests` |
 | `<task>` | Analysis task or question | (required) |
 
 ## Available Models
 
-| Model | Best For |
-|-------|----------|
-| Auto (default) | System selects optimal model |
-| `gemini-2.5-pro` | Complex reasoning, deep analysis |
-| `gemini-2.5-flash` | Speed, simpler tasks |
+| Option | Description | Models |
+|--------|-------------|--------|
+| Auto (Gemini 3) | Let the system choose the best Gemini 3 model for your task. | gemini-3-pro-preview (if enabled), gemini-3-flash-preview (if enabled) |
+| Auto (Gemini 2.5) | Let the system choose the best Gemini 2.5 model for your task. | gemini-2.5-pro, gemini-2.5-flash |
+| Manual | Select a specific model. | Any available model. |
 
 ## Execution Instructions
 
@@ -108,15 +108,15 @@ gemini -p "<TASK>" -m <MODEL> --include-directories <DIRS> --output-format text 
 
 ### With model override
 ```
-/gemini --model gemini-2.5-flash what does this function do
+/gemini --model gemini-3-flash-preview what does this function do
 ```
-→ `gemini -p "what does this function do" -m gemini-2.5-flash --output-format text --yolo 2>&1`
+→ `gemini -p "what does this function do" -m gemini-3-flash-preview --output-format text --yolo 2>&1`
 
 ### Security review with Pro model
 ```
-/gemini --model gemini-2.5-pro --dirs src security audit focusing on auth and injection
+/gemini --model gemini-3-pro-preview --dirs src security audit focusing on auth and injection
 ```
-→ `gemini -p "security audit focusing on auth and injection" -m gemini-2.5-pro --include-directories src --output-format text --yolo 2>&1`
+→ `gemini -p "security audit focusing on auth and injection" -m gemini-3-pro-preview --include-directories src --output-format text --yolo 2>&1`
 
 ## Prompt Best Practices
 

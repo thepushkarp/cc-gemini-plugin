@@ -53,7 +53,7 @@ git clone https://github.com/thepushkarp/cc-gemini-plugin ~/.claude/plugins/cc-g
 /gemini explain the architecture of this codebase
 
 # With specific model
-/gemini --model gemini-2.5-flash what does this function do
+/gemini --model gemini-3-flash-preview what does this function do
 
 # With directory context
 /gemini --dirs src,lib analyze the module structure
@@ -66,18 +66,18 @@ git clone https://github.com/thepushkarp/cc-gemini-plugin ~/.claude/plugins/cc-g
 
 | Argument | Description | Example |
 |----------|-------------|---------|
-| `--model <name>` | Model override | `--model gemini-2.5-flash` |
+| `--model <name>` | Model override | `--model gemini-3-flash-preview` |
 | `--dirs <paths>` | Include directories | `--dirs src,lib` |
 | `--files <pattern>` | Pipe files matching glob | `--files "src/**/*.ts"` |
 | `<task>` | Analysis task | (required) |
 
 ### Available Models
 
-| Model | Best For |
-|-------|----------|
-| Auto (default) | System selects optimal model |
-| `gemini-2.5-pro` | Complex reasoning, deep analysis |
-| `gemini-2.5-flash` | Speed, simpler tasks |
+| Option | Description | Models |
+|--------|-------------|--------|
+| Auto (Gemini 3) | Let the system choose the best Gemini 3 model for your task. | gemini-3-pro-preview (if enabled), gemini-3-flash-preview (if enabled) |
+| Auto (Gemini 2.5) | Let the system choose the best Gemini 2.5 model for your task. | gemini-2.5-pro, gemini-2.5-flash |
+| Manual | Select a specific model. | Any available model. |
 
 ### Autonomous Agent
 
@@ -121,7 +121,7 @@ The plugin executes Gemini CLI in headless mode:
 gemini -p "<PROMPT>" --output-format text --yolo 2>&1
 
 # With model
-gemini -p "<PROMPT>" -m gemini-2.5-flash --output-format text --yolo 2>&1
+gemini -p "<PROMPT>" -m gemini-3-flash-preview --output-format text --yolo 2>&1
 
 # With directories
 gemini -p "<PROMPT>" --include-directories src,lib --output-format text --yolo 2>&1

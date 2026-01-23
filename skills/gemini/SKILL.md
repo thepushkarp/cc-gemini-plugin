@@ -35,7 +35,7 @@ Gemini CLI leverages Google's Gemini models with a **1M token context window** -
 ### Via Slash Command
 ```
 /gemini <task>
-/gemini --model gemini-2.5-flash <task>
+/gemini --model gemini-3-flash-preview <task>
 /gemini --dirs src,lib <task>
 /gemini --files "**/*.py" <task>
 ```
@@ -52,7 +52,7 @@ Claude can spawn `gemini-agent` automatically for deep exploration tasks.
 gemini -p "<PROMPT>" --output-format text --yolo 2>&1
 
 # With model
-gemini -p "<PROMPT>" -m gemini-2.5-flash --output-format text --yolo 2>&1
+gemini -p "<PROMPT>" -m gemini-3-flash-preview --output-format text --yolo 2>&1
 
 # With directory context
 gemini -p "<PROMPT>" --include-directories src,lib --output-format text --yolo 2>&1
@@ -74,11 +74,11 @@ cat src/**/*.ts | gemini -p "<PROMPT>" --output-format text --yolo 2>&1
 
 ### Available Models
 
-| Model | Best For |
-|-------|----------|
-| Auto (default) | System chooses optimal |
-| `gemini-2.5-pro` | Complex reasoning, deep analysis |
-| `gemini-2.5-flash` | Speed, simpler tasks |
+| Option | Description | Models |
+|--------|-------------|--------|
+| Auto (Gemini 3) | Let the system choose the best Gemini 3 model for your task. | gemini-3-pro-preview (if enabled), gemini-3-flash-preview (if enabled) |
+| Auto (Gemini 2.5) | Let the system choose the best Gemini 2.5 model for your task. | gemini-2.5-pro, gemini-2.5-flash |
+| Manual | Select a specific model. | Any available model. |
 
 ## Gemini Prompting Best Practices
 

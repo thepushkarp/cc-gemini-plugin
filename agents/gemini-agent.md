@@ -92,11 +92,11 @@ gemini -p "<PROMPT>" --include-directories src,lib --output-format text --yolo 2
 
 ## Available Models
 
-| Model | Use Case |
-|-------|----------|
-| Auto (default) | System selects best model for task |
-| `gemini-2.5-pro` | Complex reasoning, multi-step analysis |
-| `gemini-2.5-flash` | Speed-optimized, simpler tasks |
+| Option | Description | Models |
+|--------|-------------|--------|
+| Auto (Gemini 3) | Let the system choose the best Gemini 3 model for your task. | gemini-3-pro-preview (if enabled), gemini-3-flash-preview (if enabled) |
+| Auto (Gemini 2.5) | Let the system choose the best Gemini 2.5 model for your task. | gemini-2.5-pro, gemini-2.5-flash |
+| Manual | Select a specific model. | Any available model. |
 
 **If the user asks to change the model** (e.g., "use flash", "switch to pro"), add `-m <model>` flag.
 
