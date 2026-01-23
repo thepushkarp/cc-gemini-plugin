@@ -196,16 +196,6 @@ For each step:
 2. **Claude synthesizes** - Interpret and act on findings
 3. **Claude executes** - Make actual code changes
 
-## Positioning: Gemini vs Codex vs Claude
-
-| Tool | Metaphor | Strength |
-|------|----------|----------|
-| **Gemini** | Satellite view | 1M context, whole-codebase understanding |
-| **Codex** | Magnifying glass | Sharp detail on specific files |
-| **Claude** | Hands-on engineer | Interactive coding, editing, reasoning |
-
-Use Gemini to see the forest, Codex to examine specific trees, Claude to plant new ones.
-
 ## Troubleshooting
 
 | Issue | Solution |

@@ -2,16 +2,15 @@
 
 Claude Code plugin that integrates [Gemini CLI](https://geminicli.com/) for long-context code exploration and analysis.
 
-## Why Gemini?
+## What is this?
 
-Gemini's **1M token context window** enables "satellite view" analysis - seeing your entire codebase at once rather than file-by-file. This makes it ideal for:
+This plugin gives Claude Code access to Google Deepmind's Gemini CLI who's **1M token context window** enables "satellite view" analysis - seeing your entire codebase at once rather than file-by-file.
 
+**Use cases:**
 - **Whole-codebase architecture understanding** - See all files simultaneously
 - **Cross-file security audits** - Trace data flow across modules
 - **Refactoring impact analysis** - Find all usages and dependencies
 - **Understanding unfamiliar large codebases** - Rapid orientation
-
-**Positioning**: Gemini = "satellite view" (whole codebase) vs Codex = "magnifying glass" (sharp detail) vs Claude = "hands-on engineer" (interactive coding)
 
 ## Prerequisites
 
@@ -34,14 +33,16 @@ Gemini's **1M token context window** enables "satellite view" analysis - seeing 
 
 ## Installation
 
-### Via Claude Code Plugin Marketplace
+Install via Claude Code's plugin marketplace:
 
-Search for `cc-gemini-plugin` in the Claude Code plugin marketplace.
+```
+/plugin marketplace add thepushkarp/cc-gemini-plugin
+```
 
-### Manual Installation
+Or install directly from the repository:
 
-```bash
-git clone https://github.com/thepushkarp/cc-gemini-plugin ~/.claude/plugins/cc-gemini-plugin
+```
+/plugin install https://github.com/thepushkarp/cc-gemini-plugin
 ```
 
 ## Usage
@@ -142,7 +143,7 @@ cat files | gemini -p "<PROMPT>" --output-format text --yolo 2>&1
 
 ## When to Use (and When Not To)
 
-### ✅ Use Gemini For
+### Use Gemini For
 
 - Whole-codebase architecture analysis
 - Cross-file security audits
@@ -151,7 +152,7 @@ cat files | gemini -p "<PROMPT>" --output-format text --yolo 2>&1
 - End-to-end flow tracing
 - Documentation generation
 
-### ❌ Don't Use Gemini For
+### Don't Use Gemini For
 
 - Quick single-file edits (use Claude)
 - Interactive debugging (needs back-and-forth)
@@ -188,6 +189,6 @@ cc-gemini-plugin/
 
 MIT
 
-## Credits
+## Author
 
-Inspired by [cc-codex-plugin](https://github.com/thepushkarp/cc-codex-plugin) by thepushkarp.
+[thepushkarp](https://github.com/thepushkarp)
