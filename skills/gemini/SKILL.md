@@ -171,6 +171,19 @@ For each step:
 </answer>
 ```
 
+**Documentation Generation:**
+```
+<task>Generate [TYPE] documentation for this codebase.</task>
+<requirements>
+1. Purpose: What this module/API/project does
+2. Usage: How to use it with examples
+3. API Reference: Functions with signatures
+4. Configuration: Available options
+5. Examples: Working code snippets
+</requirements>
+<format>Markdown. Include code blocks, tables for reference.</format>
+```
+
 ## Best Practices
 
 ### Scope Discipline

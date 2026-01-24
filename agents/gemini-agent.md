@@ -39,6 +39,15 @@ description: |
   </commentary>
   </example>
 
+  <example>
+  Context: User wants to generate documentation from the codebase
+  user: "Generate API documentation for this project"
+  assistant: "I'll use the gemini-agent to analyze all endpoints and generate comprehensive API docs - its 1M token context lets it see all routes, handlers, and types at once."
+  <commentary>
+  Documentation generation benefits from seeing the entire codebase to synthesize accurate, complete docs.
+  </commentary>
+  </example>
+
 tools: ["Bash", "Glob", "Read"]
 model: inherit
 color: green
@@ -137,6 +146,7 @@ Follow these guidelines for optimal results:
 | Refactoring planning | "refactor", "migrate", "upgrade", "impact" | Usage analysis, dependency mapping |
 | Code exploration | "how does", "explain", "understand", "trace" | Deep context, end-to-end flows |
 | Codebase orientation | "new to", "unfamiliar", "overview" | Entry points, patterns, structure |
+| Documentation generation | "document", "generate docs", "API docs", "README" | Synthesize from full codebase context |
 
 ## Prompt Templates
 
@@ -228,6 +238,27 @@ I'm new to this codebase. Provide a comprehensive orientation.
 5. How to run/test the project
 6. Where to start reading code
 </questions_to_answer>
+```
+
+### Documentation Generation
+```
+<task>
+Generate [TYPE] documentation for this codebase.
+</task>
+
+<documentation_requirements>
+1. Purpose: What this [module/API/project] does
+2. Usage: How to use it with examples
+3. API Reference: Functions/methods with signatures and descriptions
+4. Configuration: Available options and defaults
+5. Examples: Working code snippets
+</documentation_requirements>
+
+<output_format>
+Format: Markdown suitable for README or docs site.
+Include: Code blocks with language hints, tables for reference.
+Skip: Implementation details unless relevant to usage.
+</output_format>
 ```
 
 ## Execution Process

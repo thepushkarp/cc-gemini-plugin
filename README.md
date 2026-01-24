@@ -11,6 +11,7 @@ This plugin gives Claude Code access to Google Deepmind's Gemini CLI who's **1M 
 - **Cross-file security audits** - Trace data flow across modules
 - **Refactoring impact analysis** - Find all usages and dependencies
 - **Understanding unfamiliar large codebases** - Rapid orientation
+- **Documentation generation** - Synthesize README, API docs, architecture docs from full context
 
 ## Prerequisites
 
@@ -61,6 +62,9 @@ Or install directly from the repository:
 
 # With file context
 /gemini --files "**/*.py" security audit focusing on injection vulnerabilities
+
+# Documentation generation
+/gemini --dirs src generate API documentation for all endpoints
 ```
 
 ### Arguments
@@ -88,6 +92,7 @@ Claude can automatically spawn the `gemini-agent` for deep exploration tasks. Ju
 - "Do a security audit of this codebase"
 - "What would be affected if I refactor the auth module?"
 - "How does the payment flow work end-to-end?"
+- "Generate API documentation for this project"
 
 ## Prompt Best Practices
 
@@ -104,6 +109,8 @@ For best results with Gemini:
 /gemini --dirs src Analyze all error handling paths. For each: file:line, error type, whether logged, whether recoverable.
 
 /gemini --files "**/*.py" Security audit. Focus ONLY on: SQL injection, command injection, path traversal. Skip style issues.
+
+/gemini --dirs src Generate API documentation. For each endpoint: method, path, parameters, response type, example usage.
 ```
 
 ### Weak Prompts

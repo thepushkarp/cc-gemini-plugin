@@ -1,12 +1,12 @@
 ---
-description: Invoke Gemini CLI for long-context code exploration and analysis
+description: Invoke Gemini CLI for long-context code exploration, analysis, and documentation generation
 allowed-tools: Bash, Glob, Read
 argument-hint: "[--model name] [--dirs path,...] [--files pattern] <task>"
 ---
 
 # /gemini Command
 
-Invoke Gemini CLI for long-context code exploration and analysis. Gemini's 1M token context window makes it ideal for whole-codebase understanding, cross-file analysis, and architectural review.
+Invoke Gemini CLI for long-context code exploration, analysis, and documentation generation. Gemini's 1M token context window makes it ideal for whole-codebase understanding, cross-file analysis, architectural review, and synthesizing documentation from full codebase context.
 
 ## Usage
 
@@ -118,6 +118,12 @@ gemini -p "<TASK>" -m <MODEL> --include-directories <DIRS> --output-format text 
 ```
 → `gemini -p "security audit focusing on auth and injection" -m gemini-3-pro-preview --include-directories src --output-format text --yolo 2>&1`
 
+### Documentation generation
+```
+/gemini --dirs src generate API documentation for all endpoints
+```
+→ `gemini -p "generate API documentation for all endpoints" --include-directories src --output-format text --yolo 2>&1`
+
 ## Prompt Best Practices
 
 For best results with Gemini:
@@ -150,6 +156,7 @@ For best results with Gemini:
 - Refactoring impact analysis (find all usages)
 - Understanding unfamiliar large codebases
 - End-to-end flow tracing
+- Documentation generation (README, API docs, architecture docs)
 
 **Not ideal for:**
 - Quick single-file edits (use Claude)

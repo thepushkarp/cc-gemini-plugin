@@ -8,17 +8,25 @@
   },
   "plugins": [
     {
-      "name": "cc-gemini-plugin",
-      "description": "Invoke Google Gemini for long-context code exploration, architecture review, and codebase analysis",
-      "version": "1.0.0",
-      "author": {
-        "name": "pupa"
-      },
-      "source": "./",
-      "category": "integrations",
-      "keywords": ["gemini", "google", "code-exploration", "analysis", "long-context", "architecture"],
-      "homepage": "https://github.com/thepushkarp/cc-gemini-plugin",
-      "repository": "https://github.com/thepushkarp/cc-gemini-plugin"
+        "name": "cc-gemini-plugin",
+        "description": "Invoke Google Gemini for long-context code exploration, architecture review, and codebase analysis",
+        "version": "1.1.0",
+        "author": {
+            "name": "pupa"
+        },
+        "source": "./",
+        "category": "integrations",
+        "keywords": [
+            "gemini",
+            "google",
+            "code-exploration",
+            "analysis",
+            "long-context",
+            "documentation",
+            "writing"
+        ],
+        "homepage": "https://github.com/thepushkarp/cc-gemini-plugin",
+        "repository": "https://github.com/thepushkarp/cc-gemini-plugin"
     }
   ]
 }
