@@ -32,7 +32,7 @@ Invoke Gemini CLI for long-context code exploration, analysis, and documentation
 
 | Option | Description | Models |
 |--------|-------------|--------|
-| Auto (Gemini 3) | Let the system choose the best Gemini 3 model for your task. | gemini-3.1-pro (complex tasks), gemini-3-flash (fast tasks) |
+| Auto (Gemini 3) | Let the system choose the best Gemini 3 model for your task. | gemini-3.1-pro-preview (complex tasks), gemini-3-flash (fast tasks) |
 | Auto (Gemini 2.5) | Let the system choose the best Gemini 2.5 model for your task. | gemini-2.5-pro, gemini-2.5-flash |
 | Manual | Select a specific model. | gemini-3.1-pro-preview, gemini-3-flash, gemini-2.5-pro, gemini-2.5-flash, gemini-2.5-flash-lite |
 
