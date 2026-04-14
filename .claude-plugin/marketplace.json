@@ -1,7 +1,7 @@
 {
     "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
     "name": "cc-gemini-plugin",
-    "description": "Google Gemini CLI integration for Claude Code with",
+    "description": "Google Gemini CLI integration for Claude Code with shared runtime support for Codex",
     "owner": {
         "name": "thepushkarp",
         "email": ""

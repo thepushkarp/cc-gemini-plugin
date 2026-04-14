@@ -1,7 +1,7 @@
 {
     "name": "cc-gemini-plugin",
     "version": "1.2.0",
-    "description": "Integrate Gemini CLI for long-context code exploration from Claude Code",
+    "description": "Integrate Gemini CLI for long-context code exploration from Claude Code and Codex",
     "author": {
         "name": "thepushkarp"
     },
