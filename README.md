@@ -2,9 +2,9 @@
 
 Dual-host Gemini CLI integration for Claude Code and Codex.
 
-The repository provides one shared Gemini runtime and two thin host adapters:
-- Claude Code uses the existing plugin manifest, `/gemini` command, and `gemini-agent`.
-- Codex uses `.codex-plugin/plugin.json`, the shared skill, and repo-local marketplace metadata.
+The plugin uses one shared Gemini runtime and two thin host adapters:
+- Claude Code exposes `/gemini` and `gemini-agent`.
+- Codex exposes the bundled `gemini-integration` skill and plugin manifest.
 
 The plugin gives the host a clean way to hand large, cross-file analysis tasks
 to Gemini instead of solving everything file-by-file.
@@ -13,8 +13,8 @@ to Gemini instead of solving everything file-by-file.
 
 - Shared bridge runtime at `scripts/gemini-bridge.js`
 - Claude Code integration through the plugin manifest, `/gemini` command, and `gemini-agent`
-- Codex integration through `.codex-plugin/plugin.json`, the shared skill, and repo-local
-  marketplace metadata
+- Codex integration through `.codex-plugin/plugin.json`, the shared skill, and marketplace
+  metadata
 - Bridge coverage in `tests/gemini-bridge.test.js`
 
 ## Use Cases
@@ -52,10 +52,7 @@ gemini -p "what is 2+2" --output-format text
 
 ### Claude Code
 
-This repository is a Claude plugin marketplace because it includes
-`.claude-plugin/marketplace.json`.
-
-Add the marketplace, install the plugin, then reload plugins:
+Add the marketplace from GitHub, install the plugin, then reload plugins:
 
 ```bash
 /plugin marketplace add thepushkarp/cc-gemini-plugin
@@ -63,13 +60,10 @@ Add the marketplace, install the plugin, then reload plugins:
 /reload-plugins
 ```
 
-For a local checkout during development, add the repository path instead of the
-GitHub repo:
+After installation, use:
 
 ```bash
-/plugin marketplace add /absolute/path/to/cc-gemini-plugin
-/plugin install cc-gemini-plugin@cc-gemini-plugin
-/reload-plugins
+/gemini <task>
 ```
 
 After pulling marketplace changes, refresh the catalog and reload the plugin:
@@ -80,7 +74,7 @@ After pulling marketplace changes, refresh the catalog and reload the plugin:
 ```
 
 If you want collaborators to discover the marketplace automatically when they
-trust the repo, add it to `.claude/settings.json`:
+trust the repository, add it to `.claude/settings.json`:
 
 ```json
 {
@@ -95,33 +89,22 @@ trust the repo, add it to `.claude/settings.json`:
 }
 ```
 
-### Codex
-
-#### In This Repository
-
-This repository already includes:
-- `.codex-plugin/plugin.json`
-- `.agents/plugins/marketplace.json`
-
-That means the repo is already wired as a local Codex plugin and a repo-local
-marketplace. The only requirement is to run Codex from this repository root:
+For local development, you can add a filesystem path instead of the GitHub
+repository:
 
 ```bash
-git clone https://github.com/thepushkarp/cc-gemini-plugin.git
-cd cc-gemini-plugin
-codex
+/plugin marketplace add /absolute/path/to/cc-gemini-plugin
+/plugin install cc-gemini-plugin@cc-gemini-plugin
+/reload-plugins
 ```
 
-If Codex was already open before the clone or before a marketplace change,
-restart it so it reloads `.agents/plugins/marketplace.json`.
-
-#### In Every Repository
+### Codex
 
 The easiest personal install is to keep the plugin in
 `~/.codex/plugins/cc-gemini-plugin` and point one personal marketplace entry at
 it.
 
-Clone the plugin into the standard personal plugin directory:
+Clone the plugin into your personal Codex plugins directory:
 
 ```bash
 mkdir -p ~/.codex/plugins ~/.agents/plugins
@@ -157,8 +140,19 @@ Create `~/.agents/plugins/marketplace.json` with:
 If you already have `~/.agents/plugins/marketplace.json`, add the
 `cc-gemini-plugin` object to its `plugins` array instead of replacing the file.
 
-After editing the marketplace file or updating the plugin directory, restart
-Codex so it reloads the local marketplace.
+Restart Codex after editing the marketplace file or updating the plugin
+directory.
+
+After installation, use the bundled skill:
+
+```text
+$gemini-integration
+```
+
+For local development, the repository also includes `.codex-plugin/plugin.json`
+and `.agents/plugins/marketplace.json`, so a clone can act as a self-contained
+local plugin checkout. Restart Codex after marketplace changes so it reloads the
+local marketplace.
 
 ## Shared Runtime
 
