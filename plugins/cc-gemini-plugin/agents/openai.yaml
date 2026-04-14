@@ -1,4 +1,0 @@
-interface:
-  display_name: "Gemini CLI Integration"
-  short_description: "Hand large codebase and structured-data analysis to Gemini CLI."
-  default_prompt: "Use Gemini CLI Integration when a task needs a broad, cross-file pass such as architecture review, refactor impact analysis, documentation synthesis, or mixed structured-data analysis. Prefer $gemini-integration for the actual handoff."

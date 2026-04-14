@@ -10,7 +10,7 @@
         {
             "name": "cc-gemini-plugin",
             "description": "Invoke Google Gemini for long-context code exploration, architecture review, codebase analysis, and structured data synthesis",
-            "version": "1.3.4",
+            "version": "1.3.5",
             "author": {
                 "name": "thepushkarp"
             },

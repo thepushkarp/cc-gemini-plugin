@@ -6,9 +6,9 @@ allowed-tools: Bash, Glob, Read
 
 # Gemini CLI Integration
 
-Gemini CLI is the large-context handoff in this plugin. Use it when the task is
-about the shape of a system, a broad slice of a repo, or a mixed text dataset
-that should be synthesized in one pass.
+Gemini CLI is the large-context handoff in this repository. Use it when the
+task is about the shape of a system, a broad slice of a repo, or a mixed text
+dataset that should be synthesized in one pass.
 
 ## When to Use Gemini
 
@@ -49,9 +49,10 @@ large-context pass.
 ### Codex
 
 - Mention the skill explicitly with `$gemini-integration`.
-- Or ask Codex to use the installed `cc-gemini-plugin` for a large analysis task.
+- Or ask Codex to use the Gemini integration for a large analysis task.
 
-Codex reads this same skill definition and routes to the same bridge script.
+Codex reads this skill definition directly when the repository is installed as a
+user-level skill.
 
 ## Shared Runtime Contract
 

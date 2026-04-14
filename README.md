@@ -2,20 +2,20 @@
 
 Dual-host Gemini CLI integration for Claude Code and Codex.
 
-The plugin uses one shared Gemini runtime and two thin host adapters:
+This repository uses one shared Gemini runtime and two thin host adapters:
 - Claude Code exposes `/cc-gemini-plugin:gemini` and `gemini-agent`.
-- Codex exposes the bundled `gemini-integration` skill and plugin manifest.
+- Codex exposes the bundled `gemini-integration` skill.
 
-The plugin gives the host a clean way to hand large, cross-file analysis tasks
-to Gemini instead of solving everything file-by-file.
+It gives each host a clean way to hand large, cross-file analysis tasks to
+Gemini instead of solving everything file-by-file.
 
 ## Architecture
 
 - Shared bridge runtime at `scripts/gemini-bridge.js`
 - Claude Code integration through the plugin manifest, `/cc-gemini-plugin:gemini`
   command, and `gemini-agent`
-- Codex integration through `.codex-plugin/plugin.json`, the packaged bundle in
-  `plugins/cc-gemini-plugin`, the shared skill, and marketplace metadata
+- Codex integration through the root `SKILL.md` skill definition and
+  `agents/openai.yaml`
 - Bridge coverage in `tests/gemini-bridge.test.js`
 
 ## Use Cases
@@ -79,62 +79,25 @@ After pulling marketplace changes, refresh the catalog and reload the plugin:
 
 ### Codex
 
-This is also a user-level install. Once the plugin is copied into
-`~/.codex/plugins/cc-gemini-plugin` and listed in
-`~/.agents/plugins/marketplace.json`, it is available in new Codex sessions on
-this machine across repositories.
+Codex does not need a plugin for this repository. Install it as a user-level
+skill so it is available in new Codex sessions on this machine across
+repositories.
 
-The shortest path is:
-
-```bash
-npm run install:codex-global
-```
-
-That command copies the packaged Codex bundle into
-`~/.codex/plugins/cc-gemini-plugin` and upserts the marketplace entry in
-`~/.agents/plugins/marketplace.json`.
-
-Restart Codex after the installer finishes.
-
-If you prefer the manual setup, clone the repository into your user plugin
-directory:
+Install it by cloning the repository into `~/.agents/skills`:
 
 ```bash
-mkdir -p ~/.codex/plugins ~/.agents/plugins
+mkdir -p ~/.agents/skills
 git clone https://github.com/thepushkarp/cc-gemini-plugin.git \
-  ~/.codex/plugins/cc-gemini-plugin
+  ~/.agents/skills/cc-gemini-plugin
 ```
 
-Create `~/.agents/plugins/marketplace.json` with:
+Restart Codex after cloning the skill.
 
-```json
-{
-  "name": "personal-plugins",
-  "interface": {
-    "displayName": "Personal Plugins"
-  },
-  "plugins": [
-    {
-      "name": "cc-gemini-plugin",
-      "source": {
-        "source": "local",
-        "path": "./.codex/plugins/cc-gemini-plugin"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
-    }
-  ]
-}
+To update it later:
+
+```bash
+git -C ~/.agents/skills/cc-gemini-plugin pull
 ```
-
-If you already have `~/.agents/plugins/marketplace.json`, add the
-`cc-gemini-plugin` object to its `plugins` array instead of replacing the file.
-
-Restart Codex after editing the marketplace file or updating the plugin
-directory.
 
 After installation, use the bundled skill:
 
@@ -185,9 +148,9 @@ Use the bundled skill:
 $gemini-integration
 ```
 
-Or ask Codex to use the installed `cc-gemini-plugin` for a large-context pass.
+Or ask Codex to use the Gemini integration for a large-context pass.
 
-Codex-specific skill metadata lives in `skills/gemini/agents/openai.yaml`.
+Codex-specific skill metadata lives in `agents/openai.yaml`.
 
 ## Examples
 
@@ -231,38 +194,17 @@ npm test
 
 ```text
 cc-gemini-plugin/
-├── .agents/plugins/marketplace.json
 ├── .claude-plugin/
 │   ├── marketplace.json
 │   └── plugin.json
-├── .codex-plugin/
-│   └── plugin.json
+├── SKILL.md
 ├── agents/
-│   └── gemini-agent.md
+│   ├── gemini-agent.md
+│   └── openai.yaml
 ├── commands/
 │   └── gemini.md
-├── plugins/
-│   └── cc-gemini-plugin/
-│       ├── .codex-plugin/
-│       │   └── plugin.json
-│       ├── agents/
-│       │   └── openai.yaml
-│       ├── package.json
-│       ├── scripts/
-│       │   └── gemini-bridge.js
-│       └── skills/
-│           └── gemini/
-│               ├── SKILL.md
-│               └── agents/
-│                   └── openai.yaml
 ├── scripts/
-│   ├── gemini-bridge.js
-│   └── install-codex-global.js
-├── skills/
-│   └── gemini/
-│       ├── SKILL.md
-│       └── agents/
-│           └── openai.yaml
+│   └── gemini-bridge.js
 ├── tests/
 │   └── gemini-bridge.test.js
 └── package.json

@@ -1,9 +1,0 @@
-{
-  "name": "cc-gemini-plugin",
-  "version": "1.3.4",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "test": "node --test"
-  }
-}
