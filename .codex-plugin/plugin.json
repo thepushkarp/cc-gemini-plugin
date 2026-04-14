@@ -1,0 +1,13 @@
+{
+  "name": "cc-gemini-plugin",
+  "version": "1.2.0",
+  "description": "Bundle Gemini CLI workflows for long-context codebase analysis in Codex.",
+  "skills": "./skills/",
+  "homepage": "https://github.com/thepushkarp/cc-gemini-plugin",
+  "repository": "https://github.com/thepushkarp/cc-gemini-plugin",
+  "interface": {
+    "displayName": "Gemini CLI Integration",
+    "shortDescription": "Route large, cross-file analysis through Gemini CLI.",
+    "longDescription": "Use a shared Gemini bridge for architecture review, refactor impact checks, documentation synthesis, and structured data analysis."
+  }
+}

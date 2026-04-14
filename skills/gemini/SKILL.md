@@ -1,220 +1,107 @@
 ---
 name: gemini-integration
-description: This skill provides guidance on using Google's Gemini CLI for long-context code exploration. Use when the user explicitly invokes "/gemini", asks to "use gemini", "run gemini", or when Claude determines that Gemini's massive context window would complement its work on codebase exploration, architecture review, or cross-file analysis.
+description: Use Gemini CLI for long-context codebase exploration, architecture review, refactor impact analysis, documentation synthesis, or structured data analysis when the host should hand off a large cross-file problem instead of solving it file-by-file.
 allowed-tools: Bash, Glob, Read
 ---
 
 # Gemini CLI Integration
 
-Gemini CLI leverages Google's Gemini models with a **1M token context window** - ideal for "satellite view" analysis where you need to see the entire codebase at once.
+Gemini CLI is the large-context handoff in this plugin. Use it when the task is
+about the shape of a system, a broad slice of a repo, or a mixed text dataset
+that should be synthesized in one pass.
 
 ## When to Use Gemini
 
-### Ideal Cases (Gemini excels)
+### Ideal Cases
 
-| Scenario | Why Gemini Wins |
+| Scenario | Why Gemini Fits |
 |----------|-----------------|
-| **Whole-codebase architecture** | See all files simultaneously |
-| **Cross-file security audits** | Trace data flow across many modules |
-| **Refactoring impact analysis** | Find all usages and dependencies at once |
-| **Understanding unfamiliar codebases** | Rapid orientation with full context |
-| **End-to-end flow tracing** | Follow execution paths across files |
-| **Documentation generation** | Synthesize understanding from entire codebase |
+| Whole-codebase architecture | Broad cross-file synthesis |
+| Cross-file security review | Traces flows across modules |
+| Refactor impact analysis | Finds dependencies and callers |
+| Codebase orientation | Produces a high-level map quickly |
+| Documentation generation | Synthesizes behavior from many files |
+| Structured data review | Reads JSON, YAML, TOML, CSV, Markdown, and code together |
 
-### Not Ideal (Use Claude directly)
+### Not Ideal
 
 | Scenario | Why |
 |----------|-----|
-| Quick single-file edits | Overkill, slower |
-| Interactive debugging | Needs back-and-forth |
-| Speed-critical simple tasks | Latency matters |
-| Tasks Claude handles well alone | Unnecessary roundtrip |
+| Quick single-file edits | The handoff adds latency you do not need |
+| Tight interactive debugging | Better handled directly by the host model |
+| Narrow tasks with no cross-file context | Gemini adds little value |
 
-## How to Invoke
+## Host Entry Points
 
-### Via Slash Command
-```
-/gemini <task>
-/gemini --model gemini-3-flash-preview <task>
-/gemini --dirs src,lib <task>
-/gemini --files "**/*.py" <task>
-```
+### Claude Code
 
-### Via Agent (autonomous)
-Claude can spawn `gemini-agent` automatically for deep exploration tasks.
-
-## CLI Reference
-
-### Headless Mode (for automation)
+Use the slash command:
 
 ```bash
-# Basic
-gemini -p "<PROMPT>" --output-format text --yolo 2>&1
-
-# With model
-gemini -p "<PROMPT>" -m gemini-3-flash-preview --output-format text --yolo 2>&1
-
-# With directory context
-gemini -p "<PROMPT>" --include-directories src,lib --output-format text --yolo 2>&1
-
-# With file context (piped)
-cat src/**/*.ts | gemini -p "<PROMPT>" --output-format text --yolo 2>&1
+/gemini <task>
+/gemini --dirs src,docs <task>
+/gemini --files "schemas/**/*.json" <task>
 ```
 
-### Key Flags
+Claude can also spawn `gemini-agent` when the task obviously benefits from a
+large-context pass.
 
-| Flag | Purpose |
-|------|---------|
-| `-p` / `--prompt` | **Required** for headless mode |
-| `--output-format` | `text`, `json`, or `stream-json` |
-| `-m` / `--model` | Model selection |
-| `--include-directories` | Add directories for context |
-| `--yolo` / `-y` | Auto-approve tool actions |
-| `--approval-mode` | `auto_edit` for auto-approval |
+### Codex
 
-### Available Models
+- Mention the skill explicitly with `$gemini-integration`.
+- Or ask Codex to use the installed `cc-gemini-plugin` for a large analysis task.
 
-| Option | Description | Models |
-|--------|-------------|--------|
-| Auto (Gemini 3) | Let the system choose the best Gemini 3 model for your task. | gemini-3-pro-preview (if enabled), gemini-3-flash-preview (if enabled) |
-| Auto (Gemini 2.5) | Let the system choose the best Gemini 2.5 model for your task. | gemini-2.5-pro, gemini-2.5-flash |
-| Manual | Select a specific model. | Any available model. |
+Codex reads this same skill definition and routes to the same bridge script.
 
-## Gemini Prompting Best Practices
+## Shared Runtime Contract
 
-Based on Google's Gemini 3 prompting guide:
+Always prefer the shared bridge script over hand-written `gemini` commands:
 
-### Structure Principles
-
-1. **Be direct and specific** - Avoid unnecessary preamble
-2. **Use consistent delimiters** - XML tags (`<task>`, `<context>`) or markdown
-3. **Critical instructions first** - Important constraints at the beginning
-4. **Context → Task → Constraints** - Large blocks first, questions last
-5. **Keep temperature at 1.0** - Don't lower it (degrades performance)
-
-### Prompt Template
-
-```xml
-<context>
-[Source material / files / background]
-</context>
-
-<task>
-[Clear, direct task description]
-</task>
-
-<constraints>
-- Output format requirements
-- What NOT to include
-- Scope limits
-</constraints>
+```bash
+node scripts/gemini-bridge.js [options] <task>
 ```
 
-### Code-Specific Prompt Patterns
+The bridge owns:
+- argument parsing
+- directory and file ingestion
+- structured prompt assembly
+- Gemini CLI invocation
 
-**Architecture Analysis:**
-```
-<task>Analyze the architecture of this codebase.</task>
-<output>
-1. Main entry points
-2. Core modules and responsibilities
-3. Data flow patterns
-4. Key dependencies
-Format: Markdown with ASCII diagrams where helpful.
-</output>
-```
+Use:
+- `--dirs <path,...>` for broad module trees
+- `--files <glob,...>` for targeted globs and mixed data formats
+- `--model <name>` only when the caller explicitly wants a model override
+- `--format json` only when structured output is required
+- `--print-command` when you need to inspect the resolved Gemini command
 
-**Security Audit:**
-```
-<task>Security audit of this codebase.</task>
-<focus>auth bypass, injection, data exposure, access control</focus>
-<output_format>
-`file:line - SEVERITY - issue - recommendation`
-Focus ONLY on confirmed issues. Skip style issues.
-</output_format>
+## Good Patterns
+
+### Architecture
+
+```bash
+node scripts/gemini-bridge.js --dirs src,docs \
+  "Explain the architecture and cite the key files."
 ```
 
-**Refactoring Impact:**
-```
-<task>Analyze impact of refactoring [COMPONENT].</task>
-<analyze>
-1. Current state and responsibilities
-2. What depends on it
-3. What it depends on
-4. Files that need changes
-5. Migration steps
-6. Test plan
-</analyze>
+### Refactor impact
+
+```bash
+node scripts/gemini-bridge.js --dirs src \
+  "Analyze the impact of refactoring the auth module. Include affected files and migration steps."
 ```
 
-**End-to-End Flow:**
-```
-<task>Trace [FEATURE] flow from start to finish.</task>
-<output>
-For each step:
-- file:line reference
-- What happens
-- Data transformations
-- Next step
-</output>
-```
+### Structured data
 
-**Codebase Orientation:**
+```bash
+node scripts/gemini-bridge.js --files "schemas/**/*.json,data/**/*.csv" \
+  "Summarize the data contracts and identify breaking changes."
 ```
-<task>I'm new to this codebase. Provide orientation.</task>
-<answer>
-1. What does this project do? (1-2 sentences)
-2. Main entry points
-3. Directory structure overview
-4. Key patterns/abstractions
-5. How to run/test
-</answer>
-```
-
-**Documentation Generation:**
-```
-<task>Generate [TYPE] documentation for this codebase.</task>
-<requirements>
-1. Purpose: What this module/API/project does
-2. Usage: How to use it with examples
-3. API Reference: Functions with signatures
-4. Configuration: Available options
-5. Examples: Working code snippets
-</requirements>
-<format>Markdown. Include code blocks, tables for reference.</format>
-```
-
-## Best Practices
-
-### Scope Discipline
-- **Be explicit** about what to focus on
-- **Set boundaries** - "Focus ONLY on X. Skip Y."
-- **Request specific format** - Makes output actionable
-
-### Good vs Weak Prompts
-
-**Good:**
-```
-/gemini --dirs src Analyze error handling. For each: file:line, error type, logged?, recoverable?
-```
-
-**Weak:**
-```
-/gemini check this code
-```
-
-### Combining with Claude
-
-1. **Gemini explores** - Get the satellite view
-2. **Claude synthesizes** - Interpret and act on findings
-3. **Claude executes** - Make actual code changes
 
 ## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
 | Authentication error | Run `gemini auth` |
-| Rate limiting | Wait, retry with backoff |
-| Token limit exceeded | Narrow scope with `--files` |
-| Timeout | Simplify prompt, reduce context |
-| Missing output | Check `--output-format text` flag |
+| Gemini missing on PATH | Install `@google/gemini-cli` or `brew install gemini-cli` |
+| Rate limiting | Retry with a narrower task or smaller context set |
+| Token pressure | Reduce the number of inlined files |

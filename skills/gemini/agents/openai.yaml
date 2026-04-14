@@ -1,0 +1,6 @@
+interface:
+  display_name: "Gemini Integration"
+  short_description: "Use Gemini CLI for large, cross-file analysis."
+  default_prompt: "$gemini-integration "
+policy:
+  allow_implicit_invocation: true

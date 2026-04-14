@@ -9,6 +9,7 @@
 *.swp
 *.swo
 *~
+node_modules/
 
 # Development docs
 docs/

@@ -1,185 +1,191 @@
 # cc-gemini-plugin
 
-Claude Code plugin that integrates [Gemini CLI](https://geminicli.com/) for long-context code exploration and analysis.
+Dual-host Gemini CLI integration for Claude Code and Codex.
 
-## What is this?
+The repository provides one shared Gemini runtime and two thin host adapters:
+- Claude Code uses the existing plugin manifest, `/gemini` command, and `gemini-agent`.
+- Codex uses `.codex-plugin/plugin.json`, the shared skill, and repo-local marketplace metadata.
 
-This plugin gives Claude Code access to Google Deepmind's Gemini CLI who's **1M token context window** enables "satellite view" analysis - seeing your entire codebase at once rather than file-by-file.
+The plugin gives the host a clean way to hand large, cross-file analysis tasks
+to Gemini instead of solving everything file-by-file.
 
-**Use cases:**
-- **Whole-codebase architecture understanding** - See all files simultaneously
-- **Cross-file security audits** - Trace data flow across modules
-- **Refactoring impact analysis** - Find all usages and dependencies
-- **Understanding unfamiliar large codebases** - Rapid orientation
-- **Documentation generation** - Synthesize README, API docs, architecture docs from full context
+## Architecture
+
+- Shared bridge runtime at `scripts/gemini-bridge.js`
+- Claude Code integration through the plugin manifest, `/gemini` command, and `gemini-agent`
+- Codex integration through `.codex-plugin/plugin.json`, the shared skill, and repo-local
+  marketplace metadata
+- Bridge coverage in `tests/gemini-bridge.test.js`
+
+## Use Cases
+
+- whole-codebase architecture understanding
+- cross-file security audits
+- refactor impact analysis
+- unfamiliar codebase orientation
+- documentation generation
+- structured text data synthesis across JSON, YAML, TOML, CSV, Markdown, and code
 
 ## Prerequisites
 
-1. **Install Gemini CLI**
-   ```bash
-   npm install -g @anthropic-ai/gemini-cli
-   # or
-   brew install gemini
-   ```
+1. Install Gemini CLI
 
-2. **Authenticate**
-   ```bash
-   gemini auth
-   ```
+```bash
+npm install -g @google/gemini-cli
+# or
+brew install gemini-cli
+```
 
-3. **Verify installation**
-   ```bash
-   gemini -p "what is 2+2" --output-format text --yolo
-   ```
+2. Authenticate
+
+```bash
+gemini auth
+```
+
+3. Verify Gemini works
+
+```bash
+gemini -p "what is 2+2" --output-format text
+```
 
 ## Installation
 
-Install via Claude Code's plugin marketplace:
+### Claude Code
 
-```
-/plugin marketplace add thepushkarp/cc-gemini-plugin
-```
+Install from the repository:
 
-Or install directly from the repository:
-
-```
+```bash
 /plugin install https://github.com/thepushkarp/cc-gemini-plugin
 ```
 
-## Usage
+### Codex
 
-### Slash Command
+This repo includes both:
+- `.codex-plugin/plugin.json`
+- `.agents/plugins/marketplace.json`
 
-```bash
-# Simple query
-/gemini explain the architecture of this codebase
+That means the repository can act as a local Codex plugin and a repo-local
+marketplace during development.
 
-# With specific model
-/gemini --model gemini-3-flash-preview what does this function do
-
-# With directory context
-/gemini --dirs src,lib analyze the module structure
-
-# With file context
-/gemini --files "**/*.py" security audit focusing on injection vulnerabilities
-
-# Documentation generation
-/gemini --dirs src generate API documentation for all endpoints
-```
-
-### Arguments
-
-| Argument | Description | Example |
-|----------|-------------|---------|
-| `--model <name>` | Model override | `--model gemini-3-flash-preview` |
-| `--dirs <paths>` | Include directories | `--dirs src,lib` |
-| `--files <pattern>` | Pipe files matching glob | `--files "src/**/*.ts"` |
-| `<task>` | Analysis task | (required) |
-
-### Available Models
-
-| Option | Description | Models |
-|--------|-------------|--------|
-| Auto (Gemini 3) | Let the system choose the best Gemini 3 model for your task. | gemini-3-pro-preview (if enabled), gemini-3-flash-preview (if enabled) |
-| Auto (Gemini 2.5) | Let the system choose the best Gemini 2.5 model for your task. | gemini-2.5-pro, gemini-2.5-flash |
-| Manual | Select a specific model. | Any available model. |
-
-### Autonomous Agent
-
-Claude can automatically spawn the `gemini-agent` for deep exploration tasks. Just ask questions like:
-
-- "Help me understand the architecture of this project"
-- "Do a security audit of this codebase"
-- "What would be affected if I refactor the auth module?"
-- "How does the payment flow work end-to-end?"
-- "Generate API documentation for this project"
-
-## Prompt Best Practices
-
-For best results with Gemini:
-
-1. **Be direct** - Skip pleasantries, state the task clearly
-2. **Be specific** - "analyze auth module security" > "check security"
-3. **Set constraints** - "Focus ONLY on X. Skip Y."
-4. **Request format** - "Output as: `file:line - issue - recommendation`"
-
-### Good Prompts
+For a personal Codex install, the documented pattern is:
 
 ```bash
-/gemini --dirs src Analyze all error handling paths. For each: file:line, error type, whether logged, whether recoverable.
-
-/gemini --files "**/*.py" Security audit. Focus ONLY on: SQL injection, command injection, path traversal. Skip style issues.
-
-/gemini --dirs src Generate API documentation. For each endpoint: method, path, parameters, response type, example usage.
+mkdir -p ~/.codex/plugins
+cp -R /absolute/path/to/cc-gemini-plugin ~/.codex/plugins/cc-gemini-plugin
 ```
 
-### Weak Prompts
+Then expose it from `~/.agents/plugins/marketplace.json`, or use the repo-local
+marketplace while developing in this repository.
+
+## Shared Runtime
+
+Both hosts route through:
 
 ```bash
-/gemini check this code
-/gemini is there anything wrong
+node scripts/gemini-bridge.js [options] <task>
 ```
 
-## CLI Reference
+Supported options:
+- `--model <name>`
+- `--dirs <path,...>`
+- `--files <glob,...>`
+- `--format <text|json|stream-json>`
+- `--max-files <n>`
+- `--max-file-bytes <n>`
+- `--print-command`
 
-The plugin executes Gemini CLI in headless mode:
+The bridge:
+- collects files and directories locally
+- inlines text-like content into a structured prompt
+- skips unsupported binary files
+- invokes Gemini CLI in headless mode
+
+## Host Entry Points
+
+### Claude Code
+
+Use:
 
 ```bash
-# Basic
-gemini -p "<PROMPT>" --output-format text --yolo 2>&1
-
-# With model
-gemini -p "<PROMPT>" -m gemini-3-flash-preview --output-format text --yolo 2>&1
-
-# With directories
-gemini -p "<PROMPT>" --include-directories src,lib --output-format text --yolo 2>&1
-
-# With file context
-cat files | gemini -p "<PROMPT>" --output-format text --yolo 2>&1
+/gemini <task>
+/gemini --dirs src,docs <task>
+/gemini --files "schemas/**/*.json,data/**/*.csv" <task>
 ```
 
-### Key Flags
+### Codex
 
-| Flag | Purpose |
-|------|---------|
-| `-p` / `--prompt` | Headless mode (required for scripting) |
-| `--output-format` | `text`, `json`, `stream-json` |
-| `-m` / `--model` | Model selection |
-| `--include-directories` | Add directories for context |
-| `--yolo` / `-y` | Auto-approve tool actions |
+Use the bundled skill:
 
-## When to Use (and When Not To)
-
-### Use Gemini For
-
-- Whole-codebase architecture analysis
-- Cross-file security audits
-- Refactoring impact analysis
-- Understanding unfamiliar codebases
-- End-to-end flow tracing
-- Documentation generation
-
-### Don't Use Gemini For
-
-- Quick single-file edits (use Claude)
-- Interactive debugging (needs back-and-forth)
-- Speed-critical simple tasks
-
-## Plugin Structure
-
+```text
+$gemini-integration
 ```
+
+Or ask Codex to use the installed `cc-gemini-plugin` for a large-context pass.
+
+Codex-specific skill metadata lives in `skills/gemini/agents/openai.yaml`.
+
+## Examples
+
+Architecture review:
+
+```bash
+node scripts/gemini-bridge.js --dirs src,docs \
+  "Explain the architecture and cite the key files."
+```
+
+Refactor impact:
+
+```bash
+node scripts/gemini-bridge.js --dirs src \
+  "Analyze the impact of refactoring the auth module. Include affected files and migration steps."
+```
+
+Structured data review:
+
+```bash
+node scripts/gemini-bridge.js --files "schemas/**/*.json,data/**/*.csv" \
+  "Summarize the data contracts and identify breaking changes."
+```
+
+Structured output:
+
+```bash
+node scripts/gemini-bridge.js --format json --dirs src \
+  "Summarize the public API surface."
+```
+
+## Development
+
+Run the bridge tests:
+
+```bash
+npm test
+```
+
+## Repository Structure
+
+```text
 cc-gemini-plugin/
+├── .agents/plugins/marketplace.json
 ├── .claude-plugin/
-│   └── plugin.json          # Plugin manifest
+│   ├── marketplace.json
+│   └── plugin.json
+├── .codex-plugin/
+│   └── plugin.json
 ├── agents/
-│   └── gemini-agent.md      # Autonomous agent
+│   └── gemini-agent.md
 ├── commands/
-│   └── gemini.md            # /gemini slash command
+│   └── gemini.md
+├── scripts/
+│   └── gemini-bridge.js
 ├── skills/
 │   └── gemini/
-│       └── SKILL.md         # Usage guidance
-├── .gitignore
-└── README.md
+│       ├── SKILL.md
+│       └── agents/
+│           └── openai.yaml
+├── tests/
+│   └── gemini-bridge.test.js
+└── package.json
 ```
 
 ## Troubleshooting
@@ -187,15 +193,10 @@ cc-gemini-plugin/
 | Issue | Solution |
 |-------|----------|
 | Authentication error | Run `gemini auth` |
-| Rate limiting | Wait and retry |
-| Token limit exceeded | Narrow scope with `--files` |
-| Timeout | Simplify prompt, reduce context |
-| No output | Verify `--output-format text` flag |
+| Gemini missing on PATH | Install `@google/gemini-cli` or `brew install gemini-cli` |
+| Token pressure | Narrow the inlined scope with fewer directories or more specific globs |
+| Timeout | Reduce the context set and tighten the task |
 
 ## License
 
 MIT
-
-## Author
-
-[thepushkarp](https://github.com/thepushkarp)

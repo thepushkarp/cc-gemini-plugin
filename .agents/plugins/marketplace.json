@@ -1,0 +1,20 @@
+{
+  "name": "cc-gemini-plugin-local",
+  "interface": {
+    "displayName": "cc-gemini-plugin"
+  },
+  "plugins": [
+    {
+      "name": "cc-gemini-plugin",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
