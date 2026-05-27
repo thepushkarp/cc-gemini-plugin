@@ -29,23 +29,49 @@ Gemini instead of solving everything file-by-file.
 
 ## Prerequisites
 
-1. Install Gemini CLI
+Install Antigravity CLI (`agy`). Google is retiring the consumer Gemini CLI on
+2026-06-18 and replacing it with Antigravity CLI. The bridge prefers `agy` when
+it is on PATH and falls back to `gemini` so existing setups keep working during
+the transition.
+
+1. Install Antigravity CLI
 
 ```bash
-npm install -g @google/gemini-cli
-# or
-brew install gemini-cli
+curl -fsSL https://antigravity.google/cli/install.sh | bash
 ```
+
+The installer drops `agy` at `~/.local/bin/agy` and appends that directory to
+`PATH` in your shell profile. Open a new shell or re-source your profile after
+installing.
 
 2. Authenticate
 
+Launch the TUI once and complete the setup wizard (Google Sign-In opens in
+your default browser; SSH sessions get a code-flow URL):
+
 ```bash
-gemini auth
+agy
 ```
 
-3. Verify Gemini works
+Optionally import an existing Gemini CLI configuration:
 
 ```bash
+agy plugin import gemini
+```
+
+3. Verify Antigravity works
+
+```bash
+agy -p "what is 2+2"
+```
+
+### Legacy Gemini CLI (until 2026-06-18)
+
+If you are still on Gemini CLI, the bridge also accepts it:
+
+```bash
+npm install -g @google/gemini-cli   # or: brew install gemini-cli
+gemini auth
 gemini -p "what is 2+2" --output-format text
 ```
 
@@ -114,19 +140,22 @@ node scripts/gemini-bridge.js [options] <task>
 ```
 
 Supported options:
-- `--model <name>`
+- `--model <name>` (gemini only — ignored with a warning on agy; configure
+  models via `~/.gemini/antigravity-cli/settings.json` or `/model` in the TUI)
 - `--dirs <path,...>`
 - `--files <glob,...>`
-- `--format <text|json|stream-json>`
+- `--format <text|json|stream-json>` (gemini only — agy always returns text;
+  non-`text` values are ignored with a warning)
 - `--max-files <n>`
 - `--max-file-bytes <n>`
 - `--print-command`
 
 The bridge:
+- probes `PATH` and prefers `agy` when installed, otherwise calls `gemini`
 - collects files and directories locally
 - inlines text-like content into a structured prompt
 - skips unsupported binary files
-- invokes Gemini CLI in headless mode
+- invokes the resolved CLI in headless mode
 
 ## Host Entry Points
 
@@ -214,10 +243,13 @@ cc-gemini-plugin/
 
 | Issue | Solution |
 |-------|----------|
-| Authentication error | Run `gemini auth` |
-| Gemini missing on PATH | Install `@google/gemini-cli` or `brew install gemini-cli` |
+| Authentication error (agy) | Launch `agy` once and re-run the setup wizard |
+| Authentication error (gemini, legacy) | Run `gemini auth` |
+| Neither CLI on PATH | Install agy: `curl -fsSL https://antigravity.google/cli/install.sh \| bash` |
+| `--model` warning on agy | Expected — set the model in `~/.gemini/antigravity-cli/settings.json` or via `/model` in the TUI |
+| `--format json` warning on agy | Expected — agy only emits text; structured output is gemini-only |
 | Token pressure | Narrow the inlined scope with fewer directories or more specific globs |
-| Timeout | Reduce the context set and tighten the task |
+| Timeout | Reduce the context set and tighten the task (agy print mode defaults to a 5m timeout) |
 
 ## License
 

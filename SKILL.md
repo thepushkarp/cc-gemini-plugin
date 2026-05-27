@@ -1,20 +1,23 @@
 ---
 name: gemini-integration
-description: Use Gemini CLI for long-context codebase exploration, architecture review, refactor impact analysis, documentation synthesis, or structured data analysis when the host should hand off a large cross-file problem instead of solving it file-by-file.
+description: Use Antigravity CLI (agy) — or legacy Gemini CLI until 2026-06-18 — for long-context codebase exploration, architecture review, refactor impact analysis, documentation synthesis, or structured data analysis when the host should hand off a large cross-file problem instead of solving it file-by-file.
 allowed-tools: Bash, Glob, Read
 ---
 
-# Gemini CLI Integration
+# Antigravity / Gemini CLI Integration
 
-Gemini CLI is the large-context handoff in this repository. Use it when the
-task is about the shape of a system, a broad slice of a repo, or a mixed text
-dataset that should be synthesized in one pass.
+Antigravity CLI (`agy`, Google's successor to Gemini CLI) is the large-context
+handoff in this repository. Use it when the task is about the shape of a
+system, a broad slice of a repo, or a mixed text dataset that should be
+synthesized in one pass. The shared bridge prefers `agy` when on PATH and
+transparently falls back to `gemini` during the transition window (Gemini CLI
+consumer tiers shut down 2026-06-18).
 
-## When to Use Gemini
+## When to Use the Long-Context Handoff
 
 ### Ideal Cases
 
-| Scenario | Why Gemini Fits |
+| Scenario | Why a long-context handoff fits |
 |----------|-----------------|
 | Whole-codebase architecture | Broad cross-file synthesis |
 | Cross-file security review | Traces flows across modules |
@@ -56,7 +59,8 @@ user-level skill.
 
 ## Shared Runtime Contract
 
-Always prefer the shared bridge script over hand-written `gemini` commands:
+Always prefer the shared bridge script over hand-written `agy` or `gemini`
+commands:
 
 ```bash
 node scripts/gemini-bridge.js [options] <task>
@@ -66,14 +70,18 @@ The bridge owns:
 - argument parsing
 - directory and file ingestion
 - structured prompt assembly
-- Gemini CLI invocation
+- PATH probe (prefers `agy`, falls back to `gemini`)
+- CLI invocation
 
 Use:
 - `--dirs <path,...>` for broad module trees
 - `--files <glob,...>` for targeted globs and mixed data formats
 - `--model <name>` only when the caller explicitly wants a model override
-- `--format json` only when structured output is required
-- `--print-command` when you need to inspect the resolved Gemini command
+  (gemini only — agy ignores it with a warning; configure the model via
+  `~/.gemini/antigravity-cli/settings.json` or `/model` in the TUI)
+- `--format json` only when structured output is required (gemini only —
+  agy emits text)
+- `--print-command` when you need to inspect the resolved CLI invocation
 
 ## Good Patterns
 
@@ -102,7 +110,10 @@ node scripts/gemini-bridge.js --files "schemas/**/*.json,data/**/*.csv" \
 
 | Issue | Solution |
 |-------|----------|
-| Authentication error | Run `gemini auth` |
-| Gemini missing on PATH | Install `@google/gemini-cli` or `brew install gemini-cli` |
+| Authentication error (agy) | Launch `agy` once and complete the setup wizard |
+| Authentication error (gemini, legacy) | Run `gemini auth` |
+| Neither CLI on PATH | Install agy: `curl -fsSL https://antigravity.google/cli/install.sh \| bash` |
+| `--model` warning on agy | Expected — set the model in agy settings instead |
+| `--format json` warning on agy | Expected — agy emits text only |
 | Rate limiting | Retry with a narrower task or smaller context set |
 | Token pressure | Reduce the number of inlined files |
