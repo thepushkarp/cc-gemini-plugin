@@ -5,10 +5,12 @@ import os from "node:os";
 import path from "node:path";
 
 import {
+  buildCliArgs,
   buildGeminiArgs,
   buildGeminiPrompt,
   collectContextFiles,
   parseCliArgs,
+  resolveBinary,
 } from "../scripts/gemini-bridge.js";
 
 test("parseCliArgs parses model, dirs, files, and positional task", () => {
@@ -118,4 +120,44 @@ test("buildGeminiArgs maps bridge options to Gemini CLI flags", () => {
     "--output-format",
     "text",
   ]);
+});
+
+test("buildCliArgs for agy passes only -p and warns on dropped flags", () => {
+  const warnings = [];
+  const args = buildCliArgs({
+    prompt: "<task>Analyze</task>",
+    model: "gemini-2.5-pro",
+    format: "json",
+    binary: "agy",
+    warn: (msg) => warnings.push(msg),
+  });
+
+  assert.deepEqual(args, ["-p", "<task>Analyze</task>"]);
+  assert.equal(warnings.length, 2);
+  assert.match(warnings[0], /--model is ignored on agy/);
+  assert.match(warnings[1], /--format json is ignored on agy/);
+});
+
+test("buildCliArgs for agy stays silent when only -p is needed", () => {
+  const warnings = [];
+  const args = buildCliArgs({
+    prompt: "ping",
+    model: undefined,
+    format: "text",
+    binary: "agy",
+    warn: (msg) => warnings.push(msg),
+  });
+
+  assert.deepEqual(args, ["-p", "ping"]);
+  assert.equal(warnings.length, 0);
+});
+
+test("resolveBinary prefers agy when probe exits 0", () => {
+  const fakeSpawn = () => ({ status: 0 });
+  assert.equal(resolveBinary({ spawn: fakeSpawn }), "agy");
+});
+
+test("resolveBinary falls back to gemini when agy probe fails", () => {
+  const fakeSpawn = () => ({ status: 1, error: { code: "ENOENT" } });
+  assert.equal(resolveBinary({ spawn: fakeSpawn }), "gemini");
 });

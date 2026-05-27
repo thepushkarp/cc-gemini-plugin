@@ -369,28 +369,66 @@ ${task}
 </constraints>`;
 }
 
-export function buildGeminiArgs({ prompt, model, format }) {
+export function resolveBinary({ spawn = spawnSync } = {}) {
+  const probe = spawn("agy", ["--version"], { stdio: "ignore" });
+  if (probe.status === 0) {
+    return "agy";
+  }
+  return "gemini";
+}
+
+export function buildCliArgs({
+  prompt,
+  model,
+  format,
+  binary,
+  warn = (msg) => process.stderr.write(msg),
+}) {
   const args = ["-p", prompt];
+
+  if (binary === "agy") {
+    if (model) {
+      warn(
+        "Warning: --model is ignored on agy " +
+          "(configure model in ~/.gemini/antigravity-cli/settings.json or use /model in the TUI).\n",
+      );
+    }
+    if (format && format !== "text") {
+      warn(`Warning: --format ${format} is ignored on agy (only text output is supported).\n`);
+    }
+    return args;
+  }
 
   if (model) {
     args.push("-m", model);
   }
-
   args.push("--output-format", format);
   return args;
 }
 
-function ensureGeminiInstalled(spawnError) {
-  if (spawnError?.code === "ENOENT") {
-    throw new Error(
-      "Gemini CLI is not installed or not on PATH.\n" +
-        "Install it with `npm install -g @google/gemini-cli` or `brew install gemini-cli`.",
-    );
-  }
+export function buildGeminiArgs(options) {
+  return buildCliArgs({ ...options, binary: "gemini" });
 }
 
-function printResolvedCommand(args) {
-  const rendered = ["gemini", ...args.map((arg) => JSON.stringify(arg))].join(" ");
+function ensureBinaryInstalled(spawnError, binary) {
+  if (spawnError?.code !== "ENOENT") {
+    return;
+  }
+  if (binary === "agy") {
+    throw new Error(
+      "Antigravity CLI (agy) is not installed or not on PATH.\n" +
+        "Install it with `curl -fsSL https://antigravity.google/cli/install.sh | bash`.",
+    );
+  }
+  throw new Error(
+    "Neither agy nor gemini is on PATH.\n" +
+      "Install Antigravity CLI: `curl -fsSL https://antigravity.google/cli/install.sh | bash`\n" +
+      "(Legacy fallback until 2026-06-18: `npm install -g @google/gemini-cli`.)",
+  );
+}
+
+function printResolvedCommand(binary, args) {
+  const rendered = [binary, ...args.map((arg) => JSON.stringify(arg))].join(" ");
   process.stdout.write(rendered + "\n");
 }
 
@@ -403,6 +441,8 @@ export async function main(argv = process.argv.slice(2)) {
       return 0;
     }
 
+    const binary = resolveBinary();
+
     const context = await collectContextFiles({
       cwd: process.cwd(),
       dirs: parsed.dirs,
@@ -411,23 +451,24 @@ export async function main(argv = process.argv.slice(2)) {
       maxFileBytes: parsed.maxFileBytes,
     });
     const prompt = buildGeminiPrompt({ task: parsed.task, context });
-    const geminiArgs = buildGeminiArgs({
+    const cliArgs = buildCliArgs({
       prompt,
       model: parsed.model,
       format: parsed.format,
+      binary,
     });
 
     if (parsed.printCommand) {
-      printResolvedCommand(geminiArgs);
+      printResolvedCommand(binary, cliArgs);
       return 0;
     }
 
-    const result = spawnSync("gemini", geminiArgs, {
+    const result = spawnSync(binary, cliArgs, {
       encoding: "utf8",
       maxBuffer: 10 * 1024 * 1024,
     });
 
-    ensureGeminiInstalled(result.error);
+    ensureBinaryInstalled(result.error, binary);
 
     if (result.stdout) {
       process.stdout.write(result.stdout);
