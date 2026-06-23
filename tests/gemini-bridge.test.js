@@ -8,6 +8,7 @@ import {
   buildGeminiArgs,
   buildGeminiPrompt,
   collectContextFiles,
+  formatGeminiResult,
   parseCliArgs,
 } from "../scripts/gemini-bridge.js";
 
@@ -101,6 +102,36 @@ test("buildGeminiPrompt renders task, inventory, and file payloads", () => {
   assert.match(prompt, /payload\.json/);
   assert.match(prompt, /application\/json/);
   assert.match(prompt, /image\.png \(unsupported-extension\)/);
+});
+
+test("formatGeminiResult passes a clean success through untouched", () => {
+  const out = formatGeminiResult({ status: 0, stdout: "the analysis", stderr: "" });
+  assert.equal(out.exitCode, 0);
+  assert.equal(out.stdout, "the analysis");
+  assert.doesNotMatch(out.stdout, /GEMINI-BRIDGE-ERROR/);
+});
+
+test("formatGeminiResult fails LOUD on a non-zero exit (e.g. IneligibleTierError)", () => {
+  const out = formatGeminiResult({
+    status: 1,
+    stdout: "",
+    stderr: "Error authenticating: IneligibleTierError: client no longer supported",
+  });
+  // Non-zero exit propagates so callers can detect failure.
+  assert.equal(out.exitCode, 1);
+  // The marker AND the error detail land on STDOUT so a stdout-only consumer
+  // cannot mistake this for an empty-but-OK result.
+  assert.match(out.stdout, /\[GEMINI-BRIDGE-ERROR\]/);
+  assert.match(out.stdout, /NOT produced/);
+  assert.match(out.stdout, /IneligibleTierError/);
+});
+
+test("formatGeminiResult fails LOUD when exit is 0 but stdout is empty", () => {
+  const out = formatGeminiResult({ status: 0, stdout: "", stderr: "" });
+  // An empty pass must never read as success — coerce to a non-zero exit.
+  assert.equal(out.exitCode, 1);
+  assert.match(out.stdout, /\[GEMINI-BRIDGE-ERROR\]/);
+  assert.match(out.stdout, /no output and no error text/);
 });
 
 test("buildGeminiArgs maps bridge options to Gemini CLI flags", () => {
