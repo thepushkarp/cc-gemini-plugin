@@ -380,6 +380,37 @@ export function buildGeminiArgs({ prompt, model, format }) {
   return args;
 }
 
+// Shape what the bridge prints + the exit code from a spawnSync result. Pulled
+// out of main() so it can be unit-tested without spawning the real CLI.
+//
+// FAIL LOUD: the gemini CLI can exit non-zero (e.g. IneligibleTierError / auth
+// failure) while writing only to stderr. A consumer that reads just stdout would
+// then see an empty success and silently drop this reviewer's perspective. So on
+// failure (or any empty-stdout run) we emit a marked error on STDOUT too, making
+// it impossible to mistake for an empty-but-OK result.
+export function formatGeminiResult(result) {
+  const status = result.status ?? 1;
+  const stdoutRaw = result.stdout || "";
+  const stderrRaw = result.stderr || "";
+  const failed = status !== 0;
+
+  if (failed || !stdoutRaw) {
+    const detail = stderrRaw.trim() ||
+      `gemini produced no output and no error text (exit ${result.status ?? "unknown"}).`;
+    const marker =
+      "\n[GEMINI-BRIDGE-ERROR] The Gemini CLI did not return usable output — " +
+      "this reviewer/perspective was NOT produced. Do not treat this as an empty pass.\n" +
+      detail + "\n";
+    return {
+      stdout: stdoutRaw + marker,
+      stderr: stderrRaw,
+      exitCode: failed ? status : 1,
+    };
+  }
+
+  return { stdout: stdoutRaw, stderr: stderrRaw, exitCode: status };
+}
+
 function ensureGeminiInstalled(spawnError) {
   if (spawnError?.code === "ENOENT") {
     throw new Error(
@@ -425,19 +456,15 @@ export async function main(argv = process.argv.slice(2)) {
     const result = spawnSync("gemini", geminiArgs, {
       encoding: "utf8",
       maxBuffer: 10 * 1024 * 1024,
+      env: { ...process.env, GEMINI_CLI_TRUST_WORKSPACE: "true" },
     });
 
     ensureGeminiInstalled(result.error);
 
-    if (result.stdout) {
-      process.stdout.write(result.stdout);
-    }
-
-    if (result.stderr) {
-      process.stderr.write(result.stderr);
-    }
-
-    return result.status ?? 1;
+    const { stdout, stderr, exitCode } = formatGeminiResult(result);
+    if (stdout) process.stdout.write(stdout);
+    if (stderr) process.stderr.write(stderr);
+    return exitCode;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(message + "\n");
