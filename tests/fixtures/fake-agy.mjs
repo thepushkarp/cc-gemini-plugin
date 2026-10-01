@@ -23,7 +23,7 @@ emit({ event: "future_progress", detail: "preserve me" });
 if (scenario === "echo") {
   result.response = JSON.stringify({ args: process.argv.slice(2), cwd: process.cwd(), input, eof: true });
 } else if (scenario === "denied") {
-  result.denied_actions = [{ tool: "run_command", command: "npm test", reason: "Permission denied" }];
+  result.denied_actions = [{ tool: "run_command", command: "bun run test", reason: "Permission denied" }];
 } else if (scenario === "empty") {
   result.response = "";
 } else if (scenario === "whitespace") {

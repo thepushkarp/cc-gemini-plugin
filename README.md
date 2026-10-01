@@ -59,17 +59,18 @@ from the Installed tab in `/plugin`.
 
 ### Codex and other Agent Skills hosts
 
-Install with the [Vercel skills CLI](https://github.com/vercel-labs/skills):
+Install with the [Vercel skills CLI](https://github.com/vercel-labs/skills)
+using [Bun](https://bun.sh/docs/installation):
 
 ```bash
-npx skills add thepushkarp/cc-gemini-plugin --skill gemini-integration
+bunx skills add thepushkarp/cc-gemini-plugin --skill gemini-integration
 ```
 
 Select the desired hosts interactively, or specify one. For a user-level Codex
 installation available across projects:
 
 ```bash
-npx skills add thepushkarp/cc-gemini-plugin --skill gemini-integration -g -a codex
+bunx skills add thepushkarp/cc-gemini-plugin --skill gemini-integration -g -a codex
 ```
 
 Use `$gemini-integration` in Codex. Implicit skill selection remains enabled.
@@ -80,7 +81,7 @@ the plugin's namespaced command or agent; choose the plugin above for those.
 The installer supports symlinks to a canonical copy, or `--copy` for independent
 copies. The entire skill directory is self-contained, including the runtime;
 neither method requires a repository checkout or package installation. Update
-an installer-managed skill with `npx skills update gemini-integration` (add `-g`
+an installer-managed skill with `bunx skills update gemini-integration` (add `-g`
 for only the global installation).
 
 For local development, run the same installer with `.` as the source from this
@@ -196,13 +197,21 @@ to a normal checkout directory outside skill discovery paths. Install the
 canonical skill using the command above, or symlink its directory from that
 checkout. This avoids discovering duplicate skills or relying on obsolete root
 files. For a manual symlink installation, update the checkout normally; for an
-installer-managed copy, use `npx skills update gemini-integration`.
+installer-managed copy, use `bunx skills update gemini-integration`.
 
 ## Development and contributions
 
-Run `npm test` for the mocked process-boundary and packaging checks. CI is
-configured for Linux, macOS, and Windows. Live checks require an authenticated
-CLI; use disposable workspaces for implementation tests.
+Use the Bun version declared in `package.json` for development:
+
+```bash
+bun install --frozen-lockfile
+bun run test
+```
+
+The test script runs Node's test runner to verify the shipped runtime. CI uses
+Bun to run these checks on Node 22 and 24 across Linux, macOS, and Windows.
+Installed skills require Node, with no Bun dependency. Live checks require an
+authenticated CLI; use disposable workspaces for implementation tests.
 
 Local validation on October 1, 2026 passed all 31 automated checks on macOS
 with Node.js 22.23.3 and 26.8.2. Live checks used `agy` 1.2.14: analysis read
