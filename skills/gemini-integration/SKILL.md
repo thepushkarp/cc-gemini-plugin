@@ -15,12 +15,16 @@ determine the approach.
 
 Give the delegate enough context to own a useful piece of work and return a
 usable result. Prefer file and resource references over copying material it can
-read itself. Ask for the output and evidence the host needs to integrate the
-result, without reproducing the delegate's entire working context.
+read itself. State what completion means and ask for the output and evidence the
+host needs to integrate the result. When handing off stuck work, include prior
+attempts and their observed outcomes, unresolved questions, and any partial
+changes. Separate established facts from suspected explanations so the delegate
+can investigate independently.
 
 Run independent tasks in parallel when useful, with distinct outputs or file
 ownership. Avoid duplicating active work. Reuse an explicit conversation for
-related follow-ups; keep independent tasks in separate conversations.
+related follow-ups, sending the new instruction and any changed facts rather
+than replaying the whole handoff. Keep unrelated tasks in separate conversations.
 
 Native tools support workspace search, file reads and edits, and permitted
 commands. Use web, browser, MCP, or subagent tools when exposed by the installed
@@ -90,6 +94,11 @@ only an explicitly selected conversation in the intended workspace, never an
 implicit latest session or a private database lookup. Programmatic requests
 disable slash-command expansion.
 
+If the host returns a running-process handle, use its wait or cancellation
+facility for that invocation. A process handle is not an `agy` conversation ID,
+and yielding control does not mean the task failed. Use `stream-json` when
+progress matters; quiet output alone is not a reason to launch the task again.
+
 ## Assess and verify the result
 
 JSON output is `{ "ok": boolean, "result": nativeResultOrNull, "error":
@@ -108,11 +117,22 @@ Match verification to the deliverable: inspect changed files and relevant test
 evidence for implementation, check sources for research, and review the artifact
 for writing or generation. Run additional host checks when the evidence or risk
 warrants them; do not repeat delegated work by default. Distinguish verified
-results from the delegate's claims and preserve unrelated changes.
+results from the delegate's claims. Preserve uncertainty, failed checks, and
+unfinished work when summarizing; keep unrelated changes intact.
 
-If permission blocks the task, report the denied operation without escalating
-permissions or changing settings. Do not automatically retry after failure or
-timeout; first inspect partial results and any changed state.
+## Continue or recover
+
+Before retrying or taking over, confirm the previous process has ended and
+inspect its diagnostics, partial results, and any changed state. Report what
+completed and what remains blocked. Correct the cause or narrow the remaining
+task instead of repeating the same request automatically.
+
+For related work, resume the exact returned conversation ID in the same
+workspace and describe what remains plus any changes made since that run. If no
+ID is available or the task needs a fresh start, make a new invocation with a
+concise handoff. Keep the delegate's outcome distinct from any work the host
+subsequently completes. Permission failures require reporting the denied
+operation, without bypassing permissions or changing settings.
 
 If `agy` is missing or authentication fails, point to the
 [official setup documentation](https://antigravity.google/docs/cli/) and ask the

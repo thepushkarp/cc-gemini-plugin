@@ -263,10 +263,14 @@ The skill follows the [Agent Skills specification](https://agentskills.io/specif
 and [Claude skill conventions](https://code.claude.com/docs/en/skills).
 Reference projects include [Vercel Agent Skills](https://github.com/vercel-labs/agent-skills)
 for portable packaging, [Trail of Bits second-opinion](https://github.com/trailofbits/skills/tree/main/plugins/second-opinion)
-for review scope and failure reporting, and
+for review scope and failure reporting,
 [Sparkling Skills dispatch](https://github.com/sparklingneuronics/sparkling-skills)
-for conversation-based follow-ups. CLI contracts follow current upstream
-documentation and local probes rather than copied model tables.
+for conversation-based follow-ups, and
+[OpenAI's Codex connector](https://github.com/openai/codex-plugin-cc)
+for compact handoffs, incremental follow-ups, and preserving uncertainty in
+results. The shared skill distinguishes host process handles for waiting and
+cancellation from explicit `agy` conversation IDs for continuation. CLI contracts follow
+current upstream documentation and local probes rather than copied model tables.
 
 ## Troubleshooting
 
