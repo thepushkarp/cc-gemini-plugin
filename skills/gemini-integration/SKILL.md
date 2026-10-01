@@ -42,11 +42,14 @@ Use its absolute path; the skill may be copied or symlinked anywhere. Identify
 the user's target workspace separately and pass its absolute path as `--cwd`.
 Do not use the installation directory as the task's workspace.
 
-Before delegation, capture the relevant workspace state (Git status and diff
-when available). Give `agy` the task, allowed scope, constraints, acceptance
-criteria, and desired evidence, such as sources, artifacts, or verification
-results. Exclude secrets and unrelated private data from prompts and requested
-scope.
+Give `agy` the desired outcome, relevant context or references, scope, and
+constraints. Put file and directory focus directly in the task. Request a result
+summary and the evidence needed to assess it, such as sources, artifacts, or
+check results. The bridge transmits task text unchanged; it adds no instructions.
+Exclude secrets and unrelated private data from the requested scope.
+
+For tasks that may change files, capture the relevant starting state (Git status
+and diff when available) and identify work that must be preserved.
 
 The bridge uses one read/write workflow with `agy`'s native `accept-edits`
 setting. Let the task determine whether to inspect, edit, or run checks; specify
@@ -56,8 +59,7 @@ files concurrently. Surface unexpected modifications without rolling them back.
 
 The bridge does not bypass command permissions or modify settings. `--sandbox`
 opts into the native terminal sandbox; it does not confine every agent operation
-to the workspace. `--dirs` and `--files` provide focus hints, not filesystem
-restrictions or automatic file attachments.
+to the workspace. Task scope is guidance, not a filesystem restriction.
 
 ## Run the task
 
@@ -78,7 +80,6 @@ bridge sends the task to `agy` over stdin.
 | `--model <id>` | Optional override; omit to use the configured default. Discover IDs with `agy models`. |
 | `--effort <value>` | Optional native effort override; let `agy` validate supported values. |
 | `--conversation <id>` | Resume the exact conversation ID returned by an earlier result. |
-| `--dirs <path,...>` / `--files <pattern,...>` | Focus instructions relative to the workspace; quote globs. |
 | `--format text\|json\|stream-json` | Default `text`; use `json` for reliable result inspection. |
 | `--timeout <seconds>` | Positive time limit, default 600; the bridge also enforces a watchdog. |
 | `--print-command` | Print a JSON launch description without running `agy`. |
@@ -103,12 +104,15 @@ partial native results remain available. Recovered tool errors do not alone
 invalidate a completed response. Text mode prints response text to stdout and
 failure explanations to stderr.
 
-Inspect the relevant before/after workspace differences and preserve unrelated
-or concurrent changes. Verify material claims and run the appropriate checks in
-the host before reporting completion. Distinguish verified results from the
-delegate's claims. If permission blocks the task, report the denied operation
-without escalating permissions or changing settings. Do not automatically retry
-after failure or timeout; first inspect partial results and any changed state.
+Match verification to the deliverable: inspect changed files and relevant test
+evidence for implementation, check sources for research, and review the artifact
+for writing or generation. Run additional host checks when the evidence or risk
+warrants them; do not repeat delegated work by default. Distinguish verified
+results from the delegate's claims and preserve unrelated changes.
+
+If permission blocks the task, report the denied operation without escalating
+permissions or changing settings. Do not automatically retry after failure or
+timeout; first inspect partial results and any changed state.
 
 If `agy` is missing or authentication fails, point to the
 [official setup documentation](https://antigravity.google/docs/cli/) and ask the

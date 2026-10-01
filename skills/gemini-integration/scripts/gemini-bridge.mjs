@@ -18,13 +18,10 @@ const USAGE = `Usage:
 Reads and edits files as the task requires; commands use agy's configured permissions.
 
 Options:
-  --task <text>                Explicit task (instead of positional text).
   --model <name>               Model override; discover models with agy models.
   --effort <value>             Reasoning effort override, validated by agy.
   --conversation <id>          Resume this specific conversation.
   --cwd <path>                Workspace directory. Default: caller's directory.
-  --dirs <path,...>            Directory focus hints; no permission restriction.
-  --files <glob,...>           File focus hints; no ingestion or glob expansion.
   --format <text|json|stream-json>
                               Bridge output format. Default: text.
   --timeout <seconds>          Positive time limit. Default: 600.
@@ -42,14 +39,13 @@ function optionValue(argv, index) {
   return value;
 }
 
-export function parseCliArgs(argv) {
+function parseCliArgs(argv) {
   const options = {
     task: "", model: undefined, effort: undefined, conversation: undefined,
-    cwd: process.cwd(), dirs: [], files: [], format: "text",
+    cwd: process.cwd(), format: "text",
     timeout: 600, sandbox: false, printCommand: false, help: false,
   };
   const taskTokens = [];
-  let explicitTask;
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (token === "--") {
@@ -62,18 +58,11 @@ export function parseCliArgs(argv) {
       options.sandbox = true;
     } else if (token === "--print-command") {
       options.printCommand = true;
-    } else if (token === "--max-files" || token === "--max-file-bytes") {
-      throw new Error(`${token} was retired: agy reads the workspace directly. Remove this option; use --dirs or --files for focus hints.`);
-    } else if (["--task", "--model", "--effort", "--conversation", "--cwd", "--dirs", "--files", "--format", "--timeout"].includes(token)) {
+    } else if (["--model", "--effort", "--conversation", "--cwd", "--format", "--timeout"].includes(token)) {
       const value = optionValue(argv, index);
       index += 1;
       const key = token.slice(2);
-      if (key === "task") {
-        if (explicitTask !== undefined) throw new Error("Provide --task only once.");
-        explicitTask = value;
-      } else if (key === "dirs" || key === "files") {
-        options[key].push(...value.split(",").map((item) => item.trim()).filter(Boolean));
-      } else if (key === "timeout") {
+      if (key === "timeout") {
         const seconds = Number(value);
         if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(value) || !Number.isFinite(seconds) || seconds <= 0 || seconds * 1000 > Number.MAX_SAFE_INTEGER) {
           throw new Error(`--timeout must be positive seconds. Received: ${value}`);
@@ -88,35 +77,24 @@ export function parseCliArgs(argv) {
       taskTokens.push(token);
     }
   }
-  if (explicitTask !== undefined && taskTokens.length) {
-    throw new Error("Provide either --task or positional task text, not both.");
-  }
-  options.task = explicitTask ?? taskTokens.join(" ");
+  options.task = taskTokens.join(" ");
   if (!FORMATS.has(options.format)) throw new Error(`Unsupported --format ${options.format}. Expected text, json, or stream-json.`);
   if (!options.help && !options.task.trim()) throw new Error("A task is required. Use --help for usage.");
   options.cwd = path.resolve(options.cwd);
   return options;
 }
 
-function buildPrompt(options) {
-  const intent = "Complete the delegated task using the available tools. Follow the requested scope and constraints, preserve unrelated work, and respect configured permissions. Return the result and supporting evidence, including any changes, verification, or limitations.";
-  const focus = options.dirs.length || options.files.length
-    ? `\nFocus hints (guidance, not filesystem permission boundaries):\n${JSON.stringify({ directories: options.dirs, files: options.files })}\n`
-    : "";
-  return `${intent}\nUse native tools to access the workspace and other available resources as needed.\n${focus}\nTask:\n${options.task}`;
-}
-
-export function buildLaunchDescription(options, platform = process.platform) {
+function buildLaunchDescription(options) {
   const args = ["--input-format", "stream-json", "--output-format", "stream-json", "--disable-slash-commands", "--mode", "accept-edits", "--print-timeout", `${options.timeout.toLocaleString("en-US", { useGrouping: false, maximumFractionDigits: 20 })}s`];
   for (const key of ["model", "effort", "conversation"]) {
     if (options[key] !== undefined) args.push(`--${key}`, options[key]);
   }
   if (options.sandbox) args.push("--sandbox");
   return {
-    command: platform === "win32" ? "agy.exe" : "agy",
+    command: process.platform === "win32" ? "agy.exe" : "agy",
     args,
     cwd: options.cwd,
-    input: JSON.stringify({ event: "user", message: { content: buildPrompt(options) } }) + "\n",
+    input: JSON.stringify({ event: "user", message: { content: options.task } }) + "\n",
   };
 }
 
@@ -365,7 +343,7 @@ export async function main(argv = process.argv.slice(2), { spawnImpl = spawn, st
   return envelope.ok ? 0 : 1;
 }
 
-export function isMainModule(moduleUrl) {
+function isMainModule(moduleUrl) {
   if (!process.argv[1]) return false;
   try { return realpathSync(fileURLToPath(moduleUrl)) === realpathSync(process.argv[1]); }
   catch (error) {

@@ -127,37 +127,36 @@ Use `--sandbox` to request the native terminal sandbox; it does not confine ever
 agent operation to the workspace.
 
 The delegate reads files directly in `--cwd`, which defaults to the caller's
-working directory. `--dirs` and `--files` are focus hints, not access controls.
-The bridge does not recursively collect, filter, truncate, or inline files.
-Keep secrets and unrelated private data outside the requested scope.
+working directory. Put scope, file references, constraints, and the desired
+result in the task. The bridge transmits that text unchanged, without adding
+instructions or collecting files. Keep secrets and unrelated private data
+outside the requested scope.
 
-The shared skill asks the host to capture relevant workspace state, specify
-scope and acceptance criteria, avoid overlapping edits, inspect changes, and
-verify material claims and test results. Unexpected changes are reported without
-automatic rollback. Failed runs may leave partial results or changes; inspect
-them before deciding whether to retry.
+The shared skill guides delegation and verification. Capture workspace state
+when files may change, avoid overlapping edits, and assess the result according
+to the task: changed files and test evidence, research sources, or the generated
+artifact. Additional host checks depend on the evidence and risk. Unexpected
+changes are reported without automatic rollback. Failed runs may leave partial
+results or changes; inspect them before deciding whether to retry.
 
 ## Bridge interface
 
 From a repository checkout:
 
 ```bash
-node scripts/gemini-bridge.js [options] -- "<task>"
+node skills/gemini-integration/scripts/gemini-bridge.mjs [options] -- "<task>"
 ```
 
 An installed skill runs `scripts/gemini-bridge.mjs` relative to its own
-`SKILL.md`, with an absolute script path and a separate target `--cwd`. Both
-entry points expose the same interface.
+`SKILL.md`, with an absolute script path and a separate target `--cwd`.
 
 | Option | Meaning |
 | --- | --- |
-| `<task>` or `--task <text>` | Required task; `--` ends option parsing. |
+| `<task>` | Required task; `--` ends option parsing. |
 | `--cwd <path>` | Target workspace; defaults to the caller's working directory. |
 | `--model <id>` | Opaque model override; omitted by default. Discover with `agy models`. |
 | `--effort <value>` | Opaque effort override; omitted by default and validated by `agy`. |
 | `--conversation <id>` | Explicit conversation to resume, obtained from a previous result. |
-| `--dirs <path,...>` | Directory focus hints relative to the target workspace. |
-| `--files <pattern,...>` | File or glob focus hints; quote globs to avoid shell expansion. |
 | `--format text\|json\|stream-json` | Output format, default `text`. |
 | `--timeout <seconds>` | Positive time limit, default 600; native timeout plus parent watchdog. |
 | `--sandbox` | Enable the native terminal sandbox. |
@@ -173,21 +172,21 @@ automatically retry failed runs.
 Research and synthesis:
 
 ```bash
-node scripts/gemini-bridge.js --dirs docs -- \
+node skills/gemini-integration/scripts/gemini-bridge.mjs -- \
   "Compare the options in docs and research missing information using available tools. Return a recommendation with sources and uncertainties."
 ```
 
 Delegated implementation:
 
 ```bash
-node scripts/gemini-bridge.js --cwd /path/to/project --format json -- \
+node skills/gemini-integration/scripts/gemini-bridge.mjs --cwd /path/to/project --format json -- \
   "Fix the parser's handling of empty input. Limit edits to parser code and its tests. Run the relevant tests and report results."
 ```
 
 Resume a selected conversation:
 
 ```bash
-node scripts/gemini-bridge.js --conversation "<returned-conversation-id>" --format json -- \
+node skills/gemini-integration/scripts/gemini-bridge.mjs --conversation "<returned-conversation-id>" --format json -- \
   "Explain the remaining tradeoffs using the same workspace."
 ```
 
@@ -207,15 +206,14 @@ does not automatically invalidate an otherwise completed response.
 
 ## Migrating from 1.x
 
-Version 2 requires `agy`; there is no Gemini CLI fallback. `--model` and output
-formats are forwarded and handled rather than dropped. File ingestion limits
-(`--max-files` and `--max-file-bytes`) are removed and fail with guidance.
-`--dirs` and `--files` now guide native workspace reading. JSON consumers must
-read the bridge envelope described above.
+Version 2 requires `agy`; there is no Gemini CLI fallback. Use
+`skills/gemini-integration/scripts/gemini-bridge.mjs` with the task after `--`.
+The root launcher, `--task`, `--dirs`, `--files`, and file-ingestion limit options
+are unsupported. Put scope and file references directly in the task. JSON
+consumers must read the bridge envelope described above.
 
-The plugin, command, agent, skill names, and public
-`scripts/gemini-bridge.js` launcher are preserved. The canonical skill now lives
-at `skills/gemini-integration/` instead of the repository root.
+The plugin, command, agent, and skill names are preserved. The canonical skill
+lives at `skills/gemini-integration/`.
 
 If you previously cloned the repository into
 `~/.agents/skills/cc-gemini-plugin`, preserve any local edits and move that clone
@@ -239,7 +237,7 @@ Bun to run these checks on Node 22 and 24 across Linux, macOS, and Windows.
 Installed skills require Node, with no Bun dependency. Live checks require an
 authenticated CLI; use disposable workspaces for implementation tests.
 
-Local validation on October 1, 2026 passed all 30 automated checks on macOS
+Local validation on October 1, 2026 passed all 28 automated checks on macOS
 with Node.js 22.23.3 and 26.8.2. Live checks used `agy` 1.2.14: analysis read
 the fixture without modifying it using the same default workflow as edits;
 explicit conversation resumption, model and

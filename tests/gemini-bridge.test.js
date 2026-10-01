@@ -37,7 +37,7 @@ async function run(args, scenario = "success", extras = {}) {
 test("transport sends a large literal task in one stdin message and uses the requested workspace", async () => {
   const task = `Analyze 'quotes' \"double quotes\" $HOME $(echo nope) ; | & \\ 中文\n${"context ".repeat(40_000)}`;
   const cwd = await fs.mkdtemp(path.join(scratch, "target workspace "));
-  const result = await run(["--cwd", cwd, "--format", "json", "--task", task], "echo");
+  const result = await run(["--cwd", cwd, "--format", "json", "--", task], "echo");
   assert.equal(result.exitCode, 0, result.stderr);
   const envelope = JSON.parse(result.stdout);
   assert.equal(envelope.ok, true);
@@ -47,7 +47,7 @@ test("transport sends a large literal task in one stdin message and uses the req
   const messages = observed.input.trimEnd().split("\n").map(JSON.parse);
   assert.equal(messages.length, 1);
   assert.equal(messages[0].event, "user");
-  assert.ok(messages[0].message.content.includes(task));
+  assert.equal(messages[0].message.content, task);
   assert.equal(observed.eof, true);
   assert.ok(observed.args.includes("--disable-slash-commands"));
   for (const flag of ["--input-format", "--output-format"]) {
@@ -79,27 +79,19 @@ test("execution forwards model, effort, conversation, sandbox, and timeout witho
   assert.ok(!args.includes("--dangerously-skip-permissions"));
 });
 
-test("print-command resolves launch details without starting agy or ingesting focus files", async () => {
-  const focusFile = path.join(scratch, "data with spaces.bin");
-  await fs.writeFile(focusFile, "PRIVATE_CONTENT_NOT_FOR_INLINE_PROMPT");
-  const result = await run([
-    "--print-command", "--cwd", scratch, "--dirs", "src,lib",
-    "--files", focusFile, "--", "--literal-task",
-  ]);
+test("print-command resolves launch details without starting agy", async () => {
+  const result = await run(["--print-command", "--cwd", scratch, "--", "--literal-task"]);
   assert.equal(result.exitCode, 0, result.stderr);
   assert.equal(result.launch, undefined);
   const launch = JSON.parse(result.stdout);
   assert.equal(launch.cwd, scratch);
   assert.equal(launch.args[launch.args.indexOf("--print-timeout") + 1], "600s");
-  const prompt = JSON.parse(launch.input).message.content;
-  for (const hint of ["src", "lib", "--literal-task"]) assert.ok(prompt.includes(hint));
-  assert.ok(prompt.includes(JSON.stringify(focusFile).slice(1, -1)));
-  assert.ok(!prompt.includes("PRIVATE_CONTENT_NOT_FOR_INLINE_PROMPT"));
+  assert.equal(JSON.parse(launch.input).message.content, "--literal-task");
 });
 
-test("invalid and retired options fail before launching with actionable diagnostics", async (t) => {
+test("invalid options fail before launching with actionable diagnostics", async (t) => {
   for (const args of [
-    ["--max-files", "3"], ["--max-file-bytes", "64"], ["--unknown"],
+    ["--unknown"],
     ["--format", "xml"], ["--timeout", "0"],
     ["--timeout", "NaN"], ["--model"],
   ]) {
@@ -282,7 +274,7 @@ test("an unavailable executable fails with an actionable installation error", as
   assert.match(envelope.error, /ENOENT|install|not found/i);
 });
 
-test("standalone copies, directory symlinks and the public launcher run from another workspace", async () => {
+test("standalone copies and directory symlinks run from another workspace", async () => {
   const skillDir = fileURLToPath(new URL("../skills/gemini-integration", import.meta.url));
   const copiedSkill = path.join(scratch, "independent skill copy");
   await fs.cp(skillDir, copiedSkill, { recursive: true });
@@ -291,7 +283,6 @@ test("standalone copies, directory symlinks and the public launcher run from ano
   for (const entry of [
     path.join(copiedSkill, "scripts", "gemini-bridge.mjs"),
     path.join(linkedSkill, "scripts", "gemini-bridge.mjs"),
-    fileURLToPath(new URL("../scripts/gemini-bridge.js", import.meta.url)),
   ]) {
     const child = spawn(process.execPath, [entry, "--print-command", "inspect"], { cwd: scratch, shell: false });
     let stdout = "";
