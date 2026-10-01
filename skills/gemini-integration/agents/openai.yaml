@@ -1,0 +1,6 @@
+interface:
+  display_name: "Gemini Integration"
+  short_description: "Delegate analysis and scoped edits through agy."
+  default_prompt: "Use $gemini-integration to delegate this cross-file analysis or authorized implementation task to Gemini through agy."
+policy:
+  allow_implicit_invocation: true

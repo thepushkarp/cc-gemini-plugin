@@ -1,12 +1,13 @@
 {
     "name": "cc-gemini-plugin",
-    "version": "1.3.5",
-    "description": "Integrate Gemini CLI for long-context code exploration from Claude Code and Codex",
+    "version": "2.0.0",
+    "description": "Delegate Gemini analysis and implementation through Antigravity CLI from Claude Code and Agent Skills hosts",
     "author": {
         "name": "thepushkarp"
     },
     "keywords": [
         "gemini",
+        "antigravity",
         "google",
         "code-exploration",
         "analysis",
