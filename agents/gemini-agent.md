@@ -1,6 +1,6 @@
 ---
 name: gemini-agent
-description: Delegate broad codebase exploration, cross-file reviews, refactor impact analysis, or authorized implementation to Gemini through Antigravity CLI (agy).
+description: Delegate tasks to Antigravity CLI (agy) using its models, tools, and separate context for efficient execution or another perspective.
 tools: ["Bash", "Glob", "Read"]
 model: inherit
 color: green
@@ -17,12 +17,12 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/gemini-integration/scripts/gemini-bridge.mjs"
   --cwd "<target-workspace>" --format json -- "<task>"
 ```
 
-Use `--mode execute` only for implementation authorized by the user or delegating
-host. Respect scope and file ownership when other agents are working. Pass
+Let the task determine the required reads, edits, and checks. Respect scope
+and file ownership when other agents are working. Pass
 `--model` and `--effort` only when supplied or explicitly requested; otherwise
 retain the user's `agy` defaults. Quote task arguments safely for the host shell.
 
-Return findings or a verified change summary to the host, including relevant
-paths, check results, unresolved problems, and the conversation ID when useful.
+Return the result and supporting evidence to the host, including relevant
+sources, artifacts, verification, limitations, and the conversation ID when useful.
 Treat bridge failures and denied actions as incomplete work, even when native
 output reports success.

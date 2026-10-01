@@ -9,7 +9,7 @@
     "plugins": [
         {
             "name": "cc-gemini-plugin",
-            "description": "Delegate codebase analysis and authorized implementation to Gemini through Antigravity CLI",
+            "description": "Delegate tasks through Antigravity CLI using its available models, tools, and working context",
             "version": "2.0.0",
             "author": {
                 "name": "thepushkarp"

@@ -1,7 +1,7 @@
 {
     "name": "cc-gemini-plugin",
     "version": "2.0.0",
-    "description": "Delegate Gemini analysis and implementation through Antigravity CLI from Claude Code and Agent Skills hosts",
+    "description": "Delegate tasks through Antigravity CLI using its models, tools, and working context from Claude Code and Agent Skills hosts",
     "author": {
         "name": "thepushkarp"
     },

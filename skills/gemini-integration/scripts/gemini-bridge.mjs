@@ -15,13 +15,13 @@ const DIAGNOSTIC_TAIL_LENGTH = 8192;
 const USAGE = `Usage:
   node gemini-bridge.mjs [options] <task>
 
+Reads and edits files as the task requires; commands use agy's configured permissions.
+
 Options:
   --task <text>                Explicit task (instead of positional text).
   --model <name>               Model override; discover models with agy models.
   --effort <value>             Reasoning effort override, validated by agy.
   --conversation <id>          Resume this specific conversation.
-  --mode <analyze|execute>     Default: analyze. Analysis is prompt guidance,
-                              not an enforced read-only permission boundary.
   --cwd <path>                Workspace directory. Default: caller's directory.
   --dirs <path,...>            Directory focus hints; no permission restriction.
   --files <glob,...>           File focus hints; no ingestion or glob expansion.
@@ -45,7 +45,7 @@ function optionValue(argv, index) {
 export function parseCliArgs(argv) {
   const options = {
     task: "", model: undefined, effort: undefined, conversation: undefined,
-    mode: "analyze", cwd: process.cwd(), dirs: [], files: [], format: "text",
+    cwd: process.cwd(), dirs: [], files: [], format: "text",
     timeout: 600, sandbox: false, printCommand: false, help: false,
   };
   const taskTokens = [];
@@ -64,7 +64,7 @@ export function parseCliArgs(argv) {
       options.printCommand = true;
     } else if (token === "--max-files" || token === "--max-file-bytes") {
       throw new Error(`${token} was retired: agy reads the workspace directly. Remove this option; use --dirs or --files for focus hints.`);
-    } else if (["--task", "--model", "--effort", "--conversation", "--mode", "--cwd", "--dirs", "--files", "--format", "--timeout"].includes(token)) {
+    } else if (["--task", "--model", "--effort", "--conversation", "--cwd", "--dirs", "--files", "--format", "--timeout"].includes(token)) {
       const value = optionValue(argv, index);
       index += 1;
       const key = token.slice(2);
@@ -93,28 +93,24 @@ export function parseCliArgs(argv) {
   }
   options.task = explicitTask ?? taskTokens.join(" ");
   if (!FORMATS.has(options.format)) throw new Error(`Unsupported --format ${options.format}. Expected text, json, or stream-json.`);
-  if (!["analyze", "execute"].includes(options.mode)) throw new Error(`Unsupported --mode ${options.mode}. Expected analyze or execute.`);
   if (!options.help && !options.task.trim()) throw new Error("A task is required. Use --help for usage.");
   options.cwd = path.resolve(options.cwd);
   return options;
 }
 
 function buildPrompt(options) {
-  const intent = options.mode === "execute"
-    ? "Complete the authorized task in this workspace. Make only the requested changes, preserve unrelated work, and run relevant verification using configured permissions. Report changes, tests, and any blocked actions."
-    : "Analyze the task in this workspace and return findings with relevant file references. Do not modify files or run commands that change state. Report missing evidence and blocked actions; do not present incomplete work as successful.";
+  const intent = "Complete the delegated task using the available tools. Follow the requested scope and constraints, preserve unrelated work, and respect configured permissions. Return the result and supporting evidence, including any changes, verification, or limitations.";
   const focus = options.dirs.length || options.files.length
     ? `\nFocus hints (guidance, not filesystem permission boundaries):\n${JSON.stringify({ directories: options.dirs, files: options.files })}\n`
     : "";
-  return `${intent}\nRead workspace files as needed using native tools.\n${focus}\nTask:\n${options.task}`;
+  return `${intent}\nUse native tools to access the workspace and other available resources as needed.\n${focus}\nTask:\n${options.task}`;
 }
 
 export function buildLaunchDescription(options, platform = process.platform) {
-  const args = ["--input-format", "stream-json", "--output-format", "stream-json", "--disable-slash-commands", "--print-timeout", `${options.timeout.toLocaleString("en-US", { useGrouping: false, maximumFractionDigits: 20 })}s`];
+  const args = ["--input-format", "stream-json", "--output-format", "stream-json", "--disable-slash-commands", "--mode", "accept-edits", "--print-timeout", `${options.timeout.toLocaleString("en-US", { useGrouping: false, maximumFractionDigits: 20 })}s`];
   for (const key of ["model", "effort", "conversation"]) {
     if (options[key] !== undefined) args.push(`--${key}`, options[key]);
   }
-  if (options.mode === "execute") args.push("--mode", "accept-edits");
   if (options.sandbox) args.push("--sandbox");
   return {
     command: platform === "win32" ? "agy.exe" : "agy",
@@ -141,7 +137,7 @@ function resultFailure(result) {
   if (result.status !== "SUCCESS") {
     return `agy finished with status ${result.status}${result.error ? `: ${String(result.error)}` : "."}`;
   }
-  if (!result.response.trim()) return "agy returned an empty response. No usable analysis or implementation report was produced.";
+  if (!result.response.trim()) return "agy returned an empty response. No usable task result was produced.";
   return null;
 }
 

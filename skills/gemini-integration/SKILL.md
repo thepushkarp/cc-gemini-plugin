@@ -1,42 +1,63 @@
 ---
 name: gemini-integration
-description: Delegate broad codebase analysis or scoped implementation to Gemini through Antigravity CLI (agy). Use for cross-file reviews, refactor impact, codebase orientation, or an explicitly delegated edit-and-test task.
+description: Delegate tasks to Antigravity CLI (agy) to use its models, tools, and separate working context. Use when delegation can improve efficiency, provide another perspective, or let independent work proceed in parallel.
 compatibility: Requires Node.js 22 or newer, authenticated Antigravity CLI (agy) on PATH, network access, and a host able to execute local commands.
 ---
 
 # Gemini Integration
 
-Use the bundled bridge to delegate a task to `agy`, which reads the target
-workspace itself. Prefer the host's own tools for small tasks that do not benefit
-from a separate agent.
+Use the bundled bridge to delegate work to `agy`. Tasks can involve reasoning,
+research, writing, coding, data analysis, automation, or any other work supported
+by the installed environment. Let the requested outcome and available tools
+determine the approach.
+
+## Delegate efficiently
+
+Give the delegate enough context to own a useful piece of work and return a
+usable result. Prefer file and resource references over copying material it can
+read itself. Ask for the output and evidence the host needs to integrate the
+result, without reproducing the delegate's entire working context.
+
+Run independent tasks in parallel when useful, with distinct outputs or file
+ownership. Avoid duplicating active work. Reuse an explicit conversation for
+related follow-ups; keep independent tasks in separate conversations.
+
+Native tools support workspace search, file reads and edits, and permitted
+commands. Use web, browser, MCP, or subagent tools when exposed by the installed
+session; availability depends on configuration and permissions. The native
+`init.tools` list in `stream-json` output describes the session's advertised
+tools. Do not assume an advertised tool is configured or authorized for every
+operation.
+
+Use the installed CLI's help, `agy models`, usage metadata, and reported limits
+when deciding how much work to delegate. Do not assume fixed context windows,
+quotas, or concurrency limits. Match task size to the timeout and available
+capacity; use partial results to decide what to finish in the host or delegate
+as a smaller follow-up.
 
 ## Locate the bridge and scope the task
 
 Resolve `scripts/gemini-bridge.mjs` relative to **this loaded SKILL.md file**.
 Use its absolute path; the skill may be copied or symlinked anywhere. Identify
 the user's target workspace separately and pass its absolute path as `--cwd`.
-Do not change into the installation directory to analyze the user's project.
+Do not use the installation directory as the task's workspace.
 
 Before delegation, capture the relevant workspace state (Git status and diff
 when available). Give `agy` the task, allowed scope, constraints, acceptance
-criteria, and desired evidence. For review, request concrete findings with file
-and line references; for implementation, request a change summary and the
-commands and results used to verify it. Exclude secrets and unrelated private
-data from prompts and requested scope.
+criteria, and desired evidence, such as sources, artifacts, or verification
+results. Exclude secrets and unrelated private data from prompts and requested
+scope.
 
-Choose the mode from the user's authorization:
+The bridge uses one read/write workflow with `agy`'s native `accept-edits`
+setting. Let the task determine whether to inspect, edit, or run checks; specify
+constraints such as "do not modify files" in the task when needed. Commands
+still follow configured permissions. Keep other agents from editing the same
+files concurrently. Surface unexpected modifications without rolling them back.
 
-- `--mode analyze` is the default. Request findings without edits. This is an
-  instruction, **not enforced read-only access**: `agy` retains its configured
-  permissions. Surface unexpected modifications; do not roll them back.
-- `--mode execute` delegates authorized edits and commands using `agy`'s native
-  `accept-edits` mode. Give it a bounded task and keep other agents from editing
-  the same files concurrently. Commands still follow configured permissions.
-
-The bridge does not bypass permissions or modify settings. `--sandbox` opts into
-the native terminal sandbox; it does not confine every agent operation to the
-workspace. `--dirs` and `--files` provide focus hints, not filesystem restrictions
-or automatic file attachments.
+The bridge does not bypass command permissions or modify settings. `--sandbox`
+opts into the native terminal sandbox; it does not confine every agent operation
+to the workspace. `--dirs` and `--files` provide focus hints, not filesystem
+restrictions or automatic file attachments.
 
 ## Run the task
 
@@ -44,14 +65,13 @@ Substitute the resolved skill and workspace paths in this example:
 
 ```bash
 node "<skill-directory>/scripts/gemini-bridge.mjs" \
-  --cwd "<target-workspace>" --format json --dirs src,docs -- \
-  "Explain the architecture. Cite the key files and unresolved questions."
+  --cwd "<target-workspace>" --format json -- \
+  "<task, relevant context, constraints, and desired result>"
 ```
 
-For delegated implementation, add `--mode execute` and specify the permitted
-changes and acceptance checks. Quote arguments for the host shell, or use an
-argument-array execution API when available. Never splice untrusted task text
-into executable shell syntax. The bridge sends the task to `agy` over stdin.
+Quote arguments for the host shell, or use an argument-array execution API when
+available. Never splice untrusted task text into executable shell syntax. The
+bridge sends the task to `agy` over stdin.
 
 | Option | Use |
 | --- | --- |
@@ -88,7 +108,7 @@ or concurrent changes. Verify material claims and run the appropriate checks in
 the host before reporting completion. Distinguish verified results from the
 delegate's claims. If permission blocks the task, report the denied operation
 without escalating permissions or changing settings. Do not automatically retry
-implementation after failure or timeout; first inspect partial edits and tests.
+after failure or timeout; first inspect partial results and any changed state.
 
 If `agy` is missing or authentication fails, point to the
 [official setup documentation](https://antigravity.google/docs/cli/) and ask the

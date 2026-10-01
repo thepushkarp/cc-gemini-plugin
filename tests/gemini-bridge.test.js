@@ -53,7 +53,8 @@ test("transport sends a large literal task in one stdin message and uses the req
   for (const flag of ["--input-format", "--output-format"]) {
     assert.equal(observed.args[observed.args.indexOf(flag) + 1], "stream-json");
   }
-  for (const flag of ["--model", "--effort", "--mode", "--sandbox", "--continue", "--dangerously-skip-permissions"]) {
+  assert.equal(observed.args[observed.args.indexOf("--mode") + 1], "accept-edits");
+  for (const flag of ["--model", "--effort", "--sandbox", "--continue", "--dangerously-skip-permissions"]) {
     assert.ok(!observed.args.includes(flag), flag);
   }
   assert.ok(!observed.args.some((arg) => arg.includes("context ")));
@@ -63,14 +64,14 @@ test("transport sends a large literal task in one stdin message and uses the req
 
 test("execution forwards model, effort, conversation, sandbox, and timeout without rewriting opaque values", async () => {
   const result = await run([
-    "--format", "json", "--mode", "execute", "--model", "future/model:experimental",
+    "--format", "json", "--model", "future/model:experimental",
     "--effort", "future-effort", "--conversation", "opaque:session/value",
     "--sandbox", "--timeout", "17", "Implement", "the", "task",
   ], "echo");
   assert.equal(result.exitCode, 0, result.stderr);
   const { args } = JSON.parse(JSON.parse(result.stdout).result.response);
   for (const [flag, value] of [
-    ["--mode", "accept-edits"], ["--model", "future/model:experimental"],
+    ["--model", "future/model:experimental"],
     ["--effort", "future-effort"], ["--conversation", "opaque:session/value"],
     ["--print-timeout", "17s"],
   ]) assert.equal(args[args.indexOf(flag) + 1], value, flag);
@@ -99,7 +100,7 @@ test("print-command resolves launch details without starting agy or ingesting fo
 test("invalid and retired options fail before launching with actionable diagnostics", async (t) => {
   for (const args of [
     ["--max-files", "3"], ["--max-file-bytes", "64"], ["--unknown"],
-    ["--mode", "unsafe"], ["--format", "xml"], ["--timeout", "0"],
+    ["--format", "xml"], ["--timeout", "0"],
     ["--timeout", "NaN"], ["--model"],
   ]) {
     await t.test(args.join(" "), async () => {
@@ -244,8 +245,17 @@ test("cancellation stops delegated children that ignore TERM and do not hold CLI
     assert.ok(delegatedPid, output);
     assert.notEqual(code, 0);
     for (let attempt = 0; attempt < 100; attempt += 1) {
-      try { process.kill(delegatedPid, 0); }
-      catch (error) { if (error.code === "ESRCH") return; throw error; }
+      try {
+        process.kill(delegatedPid, 0);
+        if (process.platform === "linux") {
+          const stat = await fs.readFile(`/proc/${delegatedPid}/stat`, "utf8");
+          // Unreaped zombies still have a PID but cannot execute commands.
+          if (stat.slice(stat.lastIndexOf(")") + 2).startsWith("Z ")) return;
+        }
+      } catch (error) {
+        if (error.code === "ESRCH" || error.code === "ENOENT") return;
+        throw error;
+      }
       await delay(20);
     }
     assert.fail(`Delegated process ${delegatedPid} survived cancellation`);

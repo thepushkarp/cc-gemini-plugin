@@ -1,12 +1,21 @@
 # cc-gemini-plugin
 
-Delegate Gemini analysis and scoped implementation through Antigravity CLI
-(`agy`) from Claude Code, Codex, and other Agent Skills hosts.
+Delegate tasks through Antigravity CLI (`agy`) from Claude Code, Codex, and other
+Agent Skills hosts, using its models, tools, and separate working context.
 
 Claude Code provides `/cc-gemini-plugin:gemini` and `gemini-agent`. The portable
 `gemini-integration` skill uses the same runtime and can be installed separately.
-Use it for architecture reviews, refactor impact, structured-data analysis, or
-an authorized edit-and-test task spanning multiple files.
+Delegate reasoning, research, writing, coding, data analysis, automation, or
+other work supported by the installed environment. Native tools can read and
+edit files and run permitted commands; web, browser, MCP, and subagent tools
+depend on the session's available capabilities and configuration. See Google's
+[CLI overview](https://antigravity.google/docs/cli/overview/) and
+[MCP documentation](https://antigravity.google/docs/mcp/).
+
+Give `agy` a useful task, relevant references, and a clear desired result. Run
+independent tasks in parallel when appropriate, reuse explicit conversations
+for related follow-ups, and adapt to reported limits instead of assuming fixed
+model capacities or quotas.
 
 ## Requirements
 
@@ -90,12 +99,30 @@ checkout. Manual installations should copy or symlink the whole
 user skills under `~/.agents/skills/` and project skills under `.agents/skills/`.
 See [Codex skill documentation](https://developers.openai.com/codex/skills/).
 
+### Host compatibility
+
+| Component | Supported use |
+| --- | --- |
+| `skills/gemini-integration/` | Shared Agent Skill and runtime for Claude Code, Codex, and other Agent Skills hosts with local command execution. |
+| `.claude-plugin/`, `commands/gemini.md`, `agents/gemini-agent.md` | Claude Code plugin packaging, namespaced command, and subagent adapter. |
+| `skills/gemini-integration/agents/openai.yaml` | Optional Codex skill metadata and invocation policy; not a subagent definition. |
+
+Install the shared skill for the target host through the skills CLI. Host-specific
+command names, subagent definitions, and plugin installation formats are not
+part of the Agent Skills standard. OpenAI supports importing Claude skill
+packages through its [plugin conversion flow](https://developers.openai.com/plugins/guides/submit-claude-plugin),
+but Claude commands and agents need their behavior expressed as skills. This
+repository keeps that behavior in the shared skill already. Each execution
+environment still needs Node and an authenticated `agy` installation.
+
 ## Delegation and permissions
 
-`--mode analyze` is the default: the prompt requests findings without changes.
-It is not an enforced read-only mode. `--mode execute` authorizes the scoped task
-through native `accept-edits`; commands still follow the user's configured
-permissions. The bridge never injects permission bypasses or edits settings.
+The bridge has one read/write workflow using `agy`'s native `accept-edits`
+setting. The task determines whether to analyze, modify files, or run checks;
+no bridge mode flag is needed. For a review without edits, say so in the task.
+File edits are accepted automatically, while commands still follow the user's
+configured permissions. The bridge never bypasses command permissions or edits
+settings.
 Use `--sandbox` to request the native terminal sandbox; it does not confine every
 agent operation to the workspace.
 
@@ -106,9 +133,9 @@ Keep secrets and unrelated private data outside the requested scope.
 
 The shared skill asks the host to capture relevant workspace state, specify
 scope and acceptance criteria, avoid overlapping edits, inspect changes, and
-verify claimed test results. Unexpected analysis-time changes are reported
-without automatic rollback. Failed implementation runs may have partial edits;
-inspect them before deciding whether to retry.
+verify material claims and test results. Unexpected changes are reported without
+automatic rollback. Failed runs may leave partial results or changes; inspect
+them before deciding whether to retry.
 
 ## Bridge interface
 
@@ -125,7 +152,6 @@ entry points expose the same interface.
 | Option | Meaning |
 | --- | --- |
 | `<task>` or `--task <text>` | Required task; `--` ends option parsing. |
-| `--mode analyze\|execute` | Default `analyze`; execution delegates edits and commands. |
 | `--cwd <path>` | Target workspace; defaults to the caller's working directory. |
 | `--model <id>` | Opaque model override; omitted by default. Discover with `agy models`. |
 | `--effort <value>` | Opaque effort override; omitted by default and validated by `agy`. |
@@ -144,17 +170,17 @@ automatically retry failed runs.
 
 ### Examples
 
-Architecture review:
+Research and synthesis:
 
 ```bash
-node scripts/gemini-bridge.js --dirs src,docs -- \
-  "Explain the architecture and cite key files. Identify unresolved questions."
+node scripts/gemini-bridge.js --dirs docs -- \
+  "Compare the options in docs and research missing information using available tools. Return a recommendation with sources and uncertainties."
 ```
 
 Delegated implementation:
 
 ```bash
-node scripts/gemini-bridge.js --mode execute --cwd /path/to/project --format json -- \
+node scripts/gemini-bridge.js --cwd /path/to/project --format json -- \
   "Fix the parser's handling of empty input. Limit edits to parser code and its tests. Run the relevant tests and report results."
 ```
 
@@ -213,15 +239,16 @@ Bun to run these checks on Node 22 and 24 across Linux, macOS, and Windows.
 Installed skills require Node, with no Bun dependency. Live checks require an
 authenticated CLI; use disposable workspaces for implementation tests.
 
-Local validation on October 1, 2026 passed all 31 automated checks on macOS
+Local validation on October 1, 2026 passed all 30 automated checks on macOS
 with Node.js 22.23.3 and 26.8.2. Live checks used `agy` 1.2.14: analysis read
-the fixture without modifying it; explicit conversation resumption, model and
+the fixture without modifying it using the same default workflow as edits;
+explicit conversation resumption, model and
 effort overrides, and streamed output passed. A denied action with native
 `SUCCESS` produced bridge exit 1. A delegated one-file arithmetic fix passed
 the existing test when independently run by the host. Vercel skills 1.7.0 copy
 and symlink installs for Claude Code and Codex included the complete runtime,
-which ran from an unrelated working directory. The remote CI matrix had not
-been run at that validation point.
+which ran from an unrelated working directory. Copy installation also passed
+for Cursor and OpenCode.
 
 The integration history retains the contributor commits from
 [wicojan's PR #5](https://github.com/thepushkarp/cc-gemini-plugin/pull/5)
