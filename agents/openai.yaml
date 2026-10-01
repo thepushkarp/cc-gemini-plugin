@@ -1,6 +1,0 @@
-interface:
-  display_name: "Gemini Integration"
-  short_description: "Use Gemini CLI for large, cross-file analysis."
-  default_prompt: "Use $gemini-integration when a broad codebase slice, refactor impact check, documentation pass, or mixed structured-data review would benefit from one large-context Gemini CLI handoff."
-policy:
-  allow_implicit_invocation: true

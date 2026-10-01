@@ -1,0 +1,6 @@
+interface:
+  display_name: "Gemini Integration"
+  short_description: "Delegate tasks through Antigravity CLI."
+  default_prompt: "Use $gemini-integration to delegate this task to agy using its available tools and working context."
+policy:
+  allow_implicit_invocation: true

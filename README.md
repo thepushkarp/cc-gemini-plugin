@@ -1,255 +1,287 @@
 # cc-gemini-plugin
 
-Dual-host Gemini CLI integration for Claude Code and Codex.
+Delegate tasks through Antigravity CLI (`agy`) from Claude Code, Codex, and other
+Agent Skills hosts, using its models, tools, and separate working context.
 
-This repository uses one shared Gemini runtime and two thin host adapters:
-- Claude Code exposes `/cc-gemini-plugin:gemini` and `gemini-agent`.
-- Codex exposes the bundled `gemini-integration` skill.
+Claude Code provides `/cc-gemini-plugin:gemini` and `gemini-agent`. The portable
+`gemini-integration` skill uses the same runtime and can be installed separately.
+Delegate reasoning, research, writing, coding, data analysis, automation, or
+other work supported by the installed environment. Native tools can read and
+edit files and run permitted commands; web, browser, MCP, and subagent tools
+depend on the session's available capabilities and configuration. See Google's
+[CLI overview](https://antigravity.google/docs/cli/overview/) and
+[MCP documentation](https://antigravity.google/docs/mcp/).
 
-It gives each host a clean way to hand large, cross-file analysis tasks to
-Gemini instead of solving everything file-by-file.
+Give `agy` a useful task, relevant references, and a clear desired result. Run
+independent tasks in parallel when appropriate, reuse explicit conversations
+for related follow-ups, and adapt to reported limits instead of assuming fixed
+model capacities or quotas.
 
-## Architecture
+## Requirements
 
-- Shared bridge runtime at `scripts/gemini-bridge.js`
-- Claude Code integration through the plugin manifest, `/cc-gemini-plugin:gemini`
-  command, and `gemini-agent`
-- Codex integration through the root `SKILL.md` skill definition and
-  `agents/openai.yaml`
-- Bridge coverage in `tests/gemini-bridge.test.js`
+- Node.js 22 or newer.
+- Antigravity CLI available as `agy` on macOS/Linux or native `agy.exe` on Windows.
+- Completed `agy` authentication and network access to its service.
 
-## Use Cases
-
-- whole-codebase architecture understanding
-- cross-file security audits
-- refactor impact analysis
-- unfamiliar codebase orientation
-- documentation generation
-- structured text data synthesis across JSON, YAML, TOML, CSV, Markdown, and code
-
-## Prerequisites
-
-Install Antigravity CLI (`agy`). Google is retiring the consumer Gemini CLI on
-2026-06-18 and replacing it with Antigravity CLI. The bridge prefers `agy` when
-it is on PATH and falls back to `gemini` so existing setups keep working during
-the transition.
-
-1. Install Antigravity CLI
+Follow Google's [CLI installation and authentication guide](https://antigravity.google/docs/cli/),
+then launch `agy` once to complete setup. Check the installation with:
 
 ```bash
-curl -fsSL https://antigravity.google/cli/install.sh | bash
+agy --version
+agy -p "Reply with OK."
+agy models
 ```
 
-The installer drops `agy` at `~/.local/bin/agy` and appends that directory to
-`PATH` in your shell profile. Open a new shell or re-source your profile after
-installing.
+The bridge uses `agy` exclusively. Google ended consumer Gemini CLI service on
+June 18, 2026; enterprise licenses and paid API-key access continue to be
+supported. See the [Google announcement](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/)
+for the distinction.
 
-2. Authenticate
-
-Launch the TUI once and complete the setup wizard (Google Sign-In opens in
-your default browser; SSH sessions get a code-flow URL):
-
-```bash
-agy
-```
-
-Optionally import an existing Gemini CLI configuration:
-
-```bash
-agy plugin import gemini
-```
-
-3. Verify Antigravity works
-
-```bash
-agy -p "what is 2+2"
-```
-
-### Legacy Gemini CLI (until 2026-06-18)
-
-If you are still on Gemini CLI, the bridge also accepts it:
-
-```bash
-npm install -g @google/gemini-cli   # or: brew install gemini-cli
-gemini auth
-gemini -p "what is 2+2" --output-format text
-```
+The development baseline is `agy` 1.2.14, checked on October 1, 2026. Model
+identifiers and effort values come from the installed CLI; this project keeps no
+model catalogue or model-family routing rules. See the current
+[headless interface](https://antigravity.google/docs/cli/headless/) and
+[execution modes](https://antigravity.google/docs/cli/modes/).
 
 ## Installation
 
-### Claude Code
+### Claude Code plugin
 
-This is a user-level install. Once you add the marketplace and install the
-plugin, it stays available in new Claude Code sessions on this machine.
+In Claude Code:
 
-Add the marketplace from GitHub, install the plugin, then reload plugins:
-
-```bash
+```text
 /plugin marketplace add thepushkarp/cc-gemini-plugin
 /plugin install cc-gemini-plugin@cc-gemini-plugin
 /reload-plugins
 ```
 
-After installation, use:
+Use `/cc-gemini-plugin:gemini <task>` or delegate a suitable task to
+`gemini-agent`. To update, run these commands in your shell:
 
 ```bash
-/cc-gemini-plugin:gemini <task>
+claude plugin marketplace update cc-gemini-plugin
+claude plugin update cc-gemini-plugin@cc-gemini-plugin
 ```
 
-To update the plugin:
+Then run `/reload-plugins` in Claude Code. You can also select **Update now**
+from the Installed tab in `/plugin`.
+
+### Codex and other Agent Skills hosts
+
+Install with the [Vercel skills CLI](https://github.com/vercel-labs/skills)
+using [Bun](https://bun.sh/docs/installation):
 
 ```bash
-/plugin marketplace update cc-gemini-plugin
-/reload-plugins
+bunx skills add thepushkarp/cc-gemini-plugin --skill gemini-integration
 ```
 
-### Codex
-
-Codex does not need a plugin for this repository. Install it as a user-level
-skill so it is available in new Codex sessions on this machine across
-repositories.
-
-Install it by cloning the repository into `~/.agents/skills`:
+Select the desired hosts interactively, or specify one. For a user-level Codex
+installation available across projects:
 
 ```bash
-mkdir -p ~/.agents/skills
-git clone https://github.com/thepushkarp/cc-gemini-plugin.git \
-  ~/.agents/skills/cc-gemini-plugin
+bunx skills add thepushkarp/cc-gemini-plugin --skill gemini-integration -g -a codex
 ```
 
-Restart Codex after cloning the skill.
+Use `$gemini-integration` in Codex. Implicit skill selection remains enabled.
+Other supported hosts can be selected with `-a`, including `claude-code`,
+`cursor`, and `opencode`. Installing only the skill in Claude does not install
+the plugin's namespaced command or agent; choose the plugin above for those.
 
-To update it later:
+The installer supports symlinks to a canonical copy, or `--copy` for independent
+copies. The entire skill directory is self-contained, including the runtime;
+neither method requires a repository checkout or package installation. Update
+an installer-managed skill with `bunx skills update gemini-integration` (add `-g`
+for only the global installation).
+
+For local development, run the same installer with `.` as the source from this
+checkout. Manual installations should copy or symlink the whole
+`skills/gemini-integration/` directory, not just `SKILL.md`. Codex discovers
+user skills under `~/.agents/skills/` and project skills under `.agents/skills/`.
+See [Codex skill documentation](https://developers.openai.com/codex/skills/).
+
+### Host compatibility
+
+| Component | Supported use |
+| --- | --- |
+| `skills/gemini-integration/` | Shared Agent Skill and runtime for Claude Code, Codex, and other Agent Skills hosts with local command execution. |
+| `.claude-plugin/`, `commands/gemini.md`, `agents/gemini-agent.md` | Claude Code plugin packaging, namespaced command, and subagent adapter. |
+| `skills/gemini-integration/agents/openai.yaml` | Optional Codex skill metadata and invocation policy; not a subagent definition. |
+
+Install the shared skill for the target host through the skills CLI. Host-specific
+command names, subagent definitions, and plugin installation formats are not
+part of the Agent Skills standard. OpenAI supports importing Claude skill
+packages through its [plugin conversion flow](https://developers.openai.com/plugins/guides/submit-claude-plugin),
+but Claude commands and agents need their behavior expressed as skills. This
+repository keeps that behavior in the shared skill already. Each execution
+environment still needs Node and an authenticated `agy` installation.
+
+## Delegation and permissions
+
+The bridge has one read/write workflow using `agy`'s native `accept-edits`
+setting. The task determines whether to analyze, modify files, or run checks;
+no bridge mode flag is needed. For a review without edits, say so in the task.
+File edits are accepted automatically, while commands still follow the user's
+configured permissions. The bridge never bypasses command permissions or edits
+settings.
+Use `--sandbox` to request the native terminal sandbox; it does not confine every
+agent operation to the workspace.
+
+The delegate reads files directly in `--cwd`, which defaults to the caller's
+working directory. Put scope, file references, constraints, and the desired
+result in the task. The bridge transmits that text unchanged, without adding
+instructions or collecting files. Keep secrets and unrelated private data
+outside the requested scope.
+
+The shared skill guides delegation and verification. Capture workspace state
+when files may change, avoid overlapping edits, and assess the result according
+to the task: changed files and test evidence, research sources, or the generated
+artifact. Additional host checks depend on the evidence and risk. Unexpected
+changes are reported without automatic rollback. Failed runs may leave partial
+results or changes; inspect them before deciding whether to retry.
+
+## Bridge interface
+
+From a repository checkout:
 
 ```bash
-git -C ~/.agents/skills/cc-gemini-plugin pull
+node skills/gemini-integration/scripts/gemini-bridge.mjs [options] -- "<task>"
 ```
 
-After installation, use the bundled skill:
+An installed skill runs `scripts/gemini-bridge.mjs` relative to its own
+`SKILL.md`, with an absolute script path and a separate target `--cwd`.
 
-```text
-$gemini-integration
-```
+| Option | Meaning |
+| --- | --- |
+| `<task>` | Required task; `--` ends option parsing. |
+| `--cwd <path>` | Target workspace; defaults to the caller's working directory. |
+| `--model <id>` | Opaque model override; omitted by default. Discover with `agy models`. |
+| `--effort <value>` | Opaque effort override; omitted by default and validated by `agy`. |
+| `--conversation <id>` | Explicit conversation to resume, obtained from a previous result. |
+| `--format text\|json\|stream-json` | Output format, default `text`. |
+| `--timeout <seconds>` | Positive time limit, default 600; native timeout plus parent watchdog. |
+| `--sandbox` | Enable the native terminal sandbox. |
+| `--print-command` | Print a JSON launch description without invoking `agy`. |
 
-## Shared Runtime
+Tasks travel in one NDJSON stdin message, and `agy` is launched without a shell.
+Programmatic requests disable slash-command expansion. The bridge does not look
+up a latest conversation or read private conversation databases. It does not
+automatically retry failed runs.
 
-Both hosts route through:
+### Examples
+
+Research and synthesis:
 
 ```bash
-node scripts/gemini-bridge.js [options] <task>
+node skills/gemini-integration/scripts/gemini-bridge.mjs -- \
+  "Compare the options in docs and research missing information using available tools. Return a recommendation with sources and uncertainties."
 ```
 
-Supported options:
-- `--model <name>` (gemini only — ignored with a warning on agy; configure
-  models via `~/.gemini/antigravity-cli/settings.json` or `/model` in the TUI)
-- `--dirs <path,...>`
-- `--files <glob,...>`
-- `--format <text|json|stream-json>` (gemini only — agy always returns text;
-  non-`text` values are ignored with a warning)
-- `--max-files <n>`
-- `--max-file-bytes <n>`
-- `--print-command`
-
-The bridge:
-- probes `PATH` and prefers `agy` when installed, otherwise calls `gemini`
-- collects files and directories locally
-- inlines text-like content into a structured prompt
-- skips unsupported binary files
-- invokes the resolved CLI in headless mode
-
-## Host Entry Points
-
-### Claude Code
-
-Use:
+Delegated implementation:
 
 ```bash
-/cc-gemini-plugin:gemini <task>
-/cc-gemini-plugin:gemini --dirs src,docs <task>
-/cc-gemini-plugin:gemini --files "schemas/**/*.json,data/**/*.csv" <task>
+node skills/gemini-integration/scripts/gemini-bridge.mjs --cwd /path/to/project --format json -- \
+  "Fix the parser's handling of empty input. Limit edits to parser code and its tests. Run the relevant tests and report results."
 ```
 
-### Codex
-
-Use the bundled skill:
-
-```text
-$gemini-integration
-```
-
-Or ask Codex to use the Gemini integration for a large-context pass.
-
-Codex-specific skill metadata lives in `agents/openai.yaml`.
-
-## Examples
-
-Architecture review:
+Resume a selected conversation:
 
 ```bash
-node scripts/gemini-bridge.js --dirs src,docs \
-  "Explain the architecture and cite the key files."
+node skills/gemini-integration/scripts/gemini-bridge.mjs --conversation "<returned-conversation-id>" --format json -- \
+  "Explain the remaining tradeoffs using the same workspace."
 ```
 
-Refactor impact:
+### Output and failures
+
+- `text`: response text on stdout; diagnostics and failures on stderr.
+- `json`: `{ "ok": boolean, "result": nativeResultOrNull, "error": stringOrNull }`.
+- `stream-json`: native progress events, followed by one bridge terminal event:
+  `{ "event": "result", "ok": boolean, "result": nativeResultOrNull, "error": stringOrNull }`.
+
+Native metadata, including conversation identifiers, stays inside `result`.
+Partial responses are preserved. Callers must check the exit code and `ok`:
+process failure, timeout, invalid or missing results, an empty response,
+unsuccessful terminal status, or reported denied actions produce a nonzero exit.
+Native `SUCCESS` alone does not establish completion. A recovered tool error
+does not automatically invalidate an otherwise completed response.
+
+## Migrating from 1.x
+
+Version 2 requires `agy`; there is no Gemini CLI fallback. Use
+`skills/gemini-integration/scripts/gemini-bridge.mjs` with the task after `--`.
+The root launcher, `--task`, `--dirs`, `--files`, and file-ingestion limit options
+are unsupported. Put scope and file references directly in the task. JSON
+consumers must read the bridge envelope described above.
+
+The plugin, command, agent, and skill names are preserved. The canonical skill
+lives at `skills/gemini-integration/`.
+
+If you previously cloned the repository into
+`~/.agents/skills/cc-gemini-plugin`, preserve any local edits and move that clone
+to a normal checkout directory outside skill discovery paths. Install the
+canonical skill using the command above, or symlink its directory from that
+checkout. This avoids discovering duplicate skills or relying on obsolete root
+files. For a manual symlink installation, update the checkout normally; for an
+installer-managed copy, use `bunx skills update gemini-integration`.
+
+## Development and contributions
+
+Use the Bun version declared in `package.json` for development:
 
 ```bash
-node scripts/gemini-bridge.js --dirs src \
-  "Analyze the impact of refactoring the auth module. Include affected files and migration steps."
+bun install --frozen-lockfile
+bun run test
 ```
 
-Structured data review:
+The test script runs Node's test runner to verify the shipped runtime. CI uses
+Bun to run these checks on Node 22 and 24 across Linux, macOS, and Windows.
+Installed skills require Node, with no Bun dependency. Live checks require an
+authenticated CLI; use disposable workspaces for implementation tests.
 
-```bash
-node scripts/gemini-bridge.js --files "schemas/**/*.json,data/**/*.csv" \
-  "Summarize the data contracts and identify breaking changes."
-```
+Local validation on October 1, 2026 passed all 28 automated checks on macOS
+with Node.js 22.23.3 and 26.8.2. Live checks used `agy` 1.2.14: analysis read
+the fixture without modifying it using the same default workflow as edits;
+explicit conversation resumption, model and
+effort overrides, and streamed output passed. A denied action with native
+`SUCCESS` produced bridge exit 1. A delegated one-file arithmetic fix passed
+the existing test when independently run by the host. Vercel skills 1.7.0 copy
+and symlink installs for Claude Code and Codex included the complete runtime,
+which ran from an unrelated working directory. Copy installation also passed
+for Cursor and OpenCode.
 
-Structured output:
+The integration history retains the contributor commits from
+[wicojan's PR #5](https://github.com/thepushkarp/cc-gemini-plugin/pull/5)
+(Antigravity support) and
+[creatrco's PR #8](https://github.com/thepushkarp/cc-gemini-plugin/pull/8)
+(unusable-result handling). Portable launch paths, native Windows executable
+selection, and stdin transport address the failure reports in
+[issues #4](https://github.com/thepushkarp/cc-gemini-plugin/issues/4) and
+[#9](https://github.com/thepushkarp/cc-gemini-plugin/issues/9). The migration also
+addresses the consumer-service concern raised in
+[issue #7](https://github.com/thepushkarp/cc-gemini-plugin/issues/7).
 
-```bash
-node scripts/gemini-bridge.js --format json --dirs src \
-  "Summarize the public API surface."
-```
-
-## Development
-
-Run the bridge tests:
-
-```bash
-npm test
-```
-
-## Repository Structure
-
-```text
-cc-gemini-plugin/
-├── .claude-plugin/
-│   ├── marketplace.json
-│   └── plugin.json
-├── SKILL.md
-├── agents/
-│   ├── gemini-agent.md
-│   └── openai.yaml
-├── commands/
-│   └── gemini.md
-├── scripts/
-│   └── gemini-bridge.js
-├── tests/
-│   └── gemini-bridge.test.js
-└── package.json
-```
+The skill follows the [Agent Skills specification](https://agentskills.io/specification)
+and [Claude skill conventions](https://code.claude.com/docs/en/skills).
+Reference projects include [Vercel Agent Skills](https://github.com/vercel-labs/agent-skills)
+for portable packaging, [Trail of Bits second-opinion](https://github.com/trailofbits/skills/tree/main/plugins/second-opinion)
+for review scope and failure reporting,
+[Sparkling Skills dispatch](https://github.com/sparklingneuronics/sparkling-skills)
+for conversation-based follow-ups, and
+[OpenAI's Codex connector](https://github.com/openai/codex-plugin-cc)
+for compact handoffs, incremental follow-ups, and preserving uncertainty in
+results. The shared skill distinguishes host process handles for waiting and
+cancellation from explicit `agy` conversation IDs for continuation. CLI contracts follow
+current upstream documentation and local probes rather than copied model tables.
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| Authentication error (agy) | Launch `agy` once and re-run the setup wizard |
-| Authentication error (gemini, legacy) | Run `gemini auth` |
-| Neither CLI on PATH | Install agy: `curl -fsSL https://antigravity.google/cli/install.sh \| bash` |
-| `--model` warning on agy | Expected — set the model in `~/.gemini/antigravity-cli/settings.json` or via `/model` in the TUI |
-| `--format json` warning on agy | Expected — agy only emits text; structured output is gemini-only |
-| Token pressure | Narrow the inlined scope with fewer directories or more specific globs |
-| Timeout | Reduce the context set and tighten the task (agy print mode defaults to a 5m timeout) |
+| Symptom | Next step |
+| --- | --- |
+| `agy` cannot be launched | Install the native CLI and ensure its directory is on the host agent's PATH; restart the host after PATH changes. On Windows use `agy.exe`, not a `.cmd` wrapper. |
+| Authentication failure | Launch `agy` interactively and complete setup. |
+| Denied action or empty response | Inspect `error` and native `result`; report the blocked work instead of treating it as completed. |
+| Timeout | Inspect partial edits first; narrow the task or explicitly increase `--timeout` for a subsequent run. |
+| Unsupported model or effort | Consult the installed `agy` CLI and `agy models`; omit the override to use configured defaults. |
+| Skill is missing after installation | Confirm the entire canonical skill directory was installed; restart the host if discovery has not refreshed. |
 
 ## License
 
